@@ -7,4 +7,5 @@ namespace Turbo
 		void Init();
 		void Shutdown();
 	};
-}
+
+} // namespace Turbo
