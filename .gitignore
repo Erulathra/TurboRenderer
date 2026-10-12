@@ -1,0 +1,11 @@
+[Bb]uild/
+cmake-build-*
+
+# runtime files
+Content/Saved/*
+
+# Python enviro
+.venv
+**/__pycache__
+
+.cache

@@ -1,0 +1,48 @@
+[
+   {
+      "label": "Refresh CMake project",
+      "command": "cmake",
+      "args": [
+         "-S", "$ZED_WORKTREE_ROOT",
+         "--preset Development",
+      ],
+
+      "env": {
+         "CC": "clang",
+         "CXX": "clang++",
+      },
+   },
+
+   {
+      "label": "Build Development",
+      "command": "cmake",
+      "cwd": "$ZED_WORKTREE_ROOT",
+      "args": [
+         "--build", "$ZED_WORKTREE_ROOT/Build/Development",
+         "--parallel",
+      ],
+   },
+
+   {
+      "label": "Refresh CMake project [Shipping]",
+      "command": "cmake",
+      "args": [
+         "-S", "$ZED_WORKTREE_ROOT",
+         "--preset Shipping",
+      ],
+
+      "env": {
+         "CC": "clang",
+         "CXX": "clang++",
+      },
+   },
+
+   {
+      "label": "Build [Shipping]",
+      "command": "cmake",
+      "args": [
+         "--build", "$ZED_WORKTREE_ROOT/Build/Shipping",
+         "--parallel",
+      ],
+   },
+]

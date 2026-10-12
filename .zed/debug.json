@@ -1,0 +1,13 @@
+[
+	/* Run and attach */
+	{
+		"adapter": "CodeLLDB",
+      "label": "Debug Development",
+      "mode": "debug",
+
+      "program": "${ZED_WORKTREE_ROOT}/Build/Development/Runtime/Turbo",
+      "request": "launch",
+
+      "build": "Build Development"
+   },
+]

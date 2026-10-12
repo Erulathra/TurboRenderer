@@ -1,0 +1,25 @@
+{
+    "version": 1,
+    "configurePresets": [
+        {
+            "name": "Development",
+            "displayName": "Debug Development",
+            "binaryDir": "${sourceDir}/Build/Development",
+            "generator": "Unix Makefiles",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_TYPE": "Development"
+            }
+        },
+        {
+            "name": "Shipping",
+            "displayName": "Release Shipping",
+            "binaryDir": "${sourceDir}/Build/Shipping",
+            "generator": "Unix Makefiles",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_TYPE": "Shipping"
+            }
+        }
+    ]
+}
