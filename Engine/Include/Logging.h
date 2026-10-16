@@ -90,7 +90,7 @@ void Turbo_FlushLog()
 	fflush(stdout);
 }
 
-#define FILENAME_INTERNAL
+#if TURBO_DEVELOPMENT
 
 #define TURBO_LOG(VERBOSITY, FMT, ...)                                                                                 \
 	do                                                                                                                 \
@@ -99,4 +99,8 @@ void Turbo_FlushLog()
 		Turbo_LogImpl(VERBOSITY, __filename, __LINE__, FMT __VA_OPT__(, ) __VA_ARGS__);                                \
 	} while (false)
 
-#undef FILENAME_INTERNAL
+#elif TURBO_SHIPPING
+
+#define TURBO_LOG(VERBOSITY, FMT, ...) do {} while(false)
+
+#endif // TURBO_SHIPPING
