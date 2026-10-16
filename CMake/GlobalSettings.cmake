@@ -37,7 +37,7 @@ set(CMAKE_COLOR_DIAGNOSTICS ON)
 
 # Platform definitions
 set(PLATFORM_LINUX 0)
-set(PLATFORM_WIN64 0)
+set(PLATFORM_WINDOWS 0)
 
 if (UNIX)
 	turbo_message(STATUS "Platform Linux")

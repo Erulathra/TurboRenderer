@@ -9,3 +9,6 @@ Content/Saved/*
 **/__pycache__
 
 .cache
+
+# Presonal notes
+notes.md
