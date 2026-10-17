@@ -4,20 +4,15 @@
 
 namespace Turbo
 {
-	void Engine::Init(void* pernament, void* transient)
+	void Engine::Init(void* permanent, u64 permanentSize, void* transient, u64 transientSize)
 	{
-		mPernamentMemory = pernament;
-		mTransientMemory = transient;
-
-		TURBO_LOG(Log, "Hello World!");
-		TURBO_LOG(Log, "Test Log");
-		TURBO_LOG(Warning, "Test Warning");
-		TURBO_LOG(Error, "Test Error");
-
-		check(false);
+		TURBO_LOG(Log, "Welcome to Turbo::Engine!");
+		TURBO_LOG(Log, "Initializing memory. [P: %uMiB, T: %uMiB]", permanentSize / kMebi, transientSize / kMebi);
+		mPermanentMemory.Init(permanent, permanentSize);
+		mTransientMemory.Init(transient, transientSize);
 	}
 
-	void Engine::Shutdown() { TURBO_LOG(Log, "Goodbye World!"); }
+	void Engine::Shutdown() { TURBO_LOG(Log, "Shutting down Turbo::Engine."); }
 
 	void Engine::Tick()
 	{

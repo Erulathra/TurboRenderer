@@ -13,7 +13,7 @@
 	{                                                                                                                   \
 		if (!(CONDITION)) [[unlikely]]                                                                                   \
 		{                                                                                                                \
-			namespace Color = Turbo::ANSIColor;                                                                           \
+			namespace Color = ANSIColor;                                                                           \
 			TURBO_LOG(Error, "Condition: %s[%s]%s failed. Aborting.", Color::BoldWhite, #CONDITION, Color::Reset);        \
 			Turbo_FlushLog();                                                                                             \
 			abort();                                                                                                      \

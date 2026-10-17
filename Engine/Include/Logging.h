@@ -6,66 +6,61 @@
 
 #define WITH_LOGS TURBO_DEVELOPMENT
 
-/* Logging [TODO(SS): Invent better implementation] */
-namespace Turbo
+namespace ANSIColor
 {
-	namespace ANSIColor
+	const char* BoldWhite  = "\x1B[1;37m";
+	const char* BoldYellow = "\x1B[1;33m";
+	const char* BoldRed    = "\x1B[1;31m";
+	const char* Reset      = "\x1B[0m";
+} // namespace ANSIColor
+
+enum LogVerbosity
+{
+	Log,
+	Warning,
+	Error
+};
+
+LiteralString ToLogString(LogVerbosity verbosity)
+{
+	switch (verbosity)
 	{
-		const char* BoldWhite  = "\x1B[1;37m";
-		const char* BoldYellow = "\x1B[1;33m";
-		const char* BoldRed    = "\x1B[1;31m";
-		const char* Reset      = "\x1B[0m";
-	} // namespace ANSIColor
+	case Log:
+		return "  Log  ";
+	case Warning:
+		return "Warning";
+	case Error:
+		return " Error ";
 
-	enum LogVerbosity
-	{
-		Log,
-		Warning,
-		Error
-	};
-
-	LiteralString ToLogString(LogVerbosity verbosity)
-	{
-		switch (verbosity)
-		{
-		case Log:
-			return "  Log  ";
-		case Warning:
-			return "Warning";
-		case Error:
-			return " Error ";
-
-		default:
-			break;
-		}
-
-		return "Invalid";
+	default:
+		break;
 	}
 
-	const char* GetANSIColor(LogVerbosity verbosity)
-	{
-		switch (verbosity)
-		{
-		case Log:
-			return ANSIColor::BoldWhite;
-		case Warning:
-			return ANSIColor::BoldYellow;
-		case Error:
-			return ANSIColor::BoldRed;
-
-		default:
-			break;
-		}
-
-		return "";
-
-	}
+	return "Invalid";
 }
 
-void Turbo_LogImpl(Turbo::LogVerbosity verbosity, const char* fileName, u32 lineNumber, const char* fmt, ...)
+const char* GetANSIColor(LogVerbosity verbosity)
+{
+	switch (verbosity)
+	{
+	case Log:
+		return ANSIColor::BoldWhite;
+	case Warning:
+		return ANSIColor::BoldYellow;
+	case Error:
+		return ANSIColor::BoldRed;
+
+	default:
+		break;
+	}
+
+	return "";
+
+}
+
+void Turbo_LogImpl(LogVerbosity verbosity, const char* fileName, u32 lineNumber, const char* fmt, ...)
 {
 	// TODO(SS): Implement without malloc, and make it thread-safe (ring-buffer ?)
-
 	constexpr u32 logBufferSize = 2048;
 	char messageBuffer[logBufferSize];
 
@@ -77,9 +72,9 @@ void Turbo_LogImpl(Turbo::LogVerbosity verbosity, const char* fileName, u32 line
 	fprintf(
 		stdout,
 		"%s[%s]%s[%s:%u]: %s\n",
-		Turbo::GetANSIColor(verbosity),
+		GetANSIColor(verbosity),
 		ToLogString(verbosity),
-		Turbo::ANSIColor::Reset,
+		ANSIColor::Reset,
 		fileName,
 		lineNumber,
 		messageBuffer

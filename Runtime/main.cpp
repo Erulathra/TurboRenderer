@@ -1,13 +1,15 @@
 #include "Engine.h"
 
-#include "Platform.h"
-
 i32 main(i32 argc, char* argv[])
 {
-	void* PermamentMemory = Turbo::Platform::AllocateProgramMemory(128 * Turbo::kMebi);
-	void* TransientMemory = Turbo::Platform::AllocateProgramMemory(2 * Turbo::kGibi);
+	constexpr u64 kPermamentSize = 128 * Turbo::kMebi;
+	constexpr u64 kTransientSize = 2 * Turbo::kGibi;
+
+	// NOTE(SS): We don't need to free this allocation. It would be freed by OS after program shutdown.
+	void* permamentMemory = Turbo::AllocateProgramMemory(kPermamentSize);
+	void* transientMemory = Turbo::AllocateProgramMemory(kTransientSize);
 
 	Turbo::Engine engine = {};
-	engine.Init(PermamentMemory, TransientMemory);
+	engine.Init(permamentMemory, kPermamentSize, transientMemory, kTransientSize);
 	engine.Shutdown();
 }
