@@ -1,3 +1,5 @@
 #include "TypeDefs.h"
-#include "Logging.h"
 #include "Platform.h"
+#include "Logging.h"
+#include "Memory.h"
+#include "Assert.h"

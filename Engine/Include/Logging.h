@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#define WITH_LOGS TURBO_DEVELOPMENT
+
 /* Logging [TODO(SS): Invent better implementation] */
 namespace Turbo
 {
@@ -60,7 +62,6 @@ namespace Turbo
 	}
 }
 
-
 void Turbo_LogImpl(Turbo::LogVerbosity verbosity, const char* fileName, u32 lineNumber, const char* fmt, ...)
 {
 	// TODO(SS): Implement without malloc, and make it thread-safe (ring-buffer ?)
@@ -70,7 +71,7 @@ void Turbo_LogImpl(Turbo::LogVerbosity verbosity, const char* fileName, u32 line
 
 	va_list args;
 	va_start(args, fmt);
-	snprintf(messageBuffer, logBufferSize, fmt, args);
+	vsnprintf(messageBuffer, logBufferSize, fmt, args);
 	va_end(args);
 
 	fprintf(
@@ -90,7 +91,7 @@ void Turbo_FlushLog()
 	fflush(stdout);
 }
 
-#if TURBO_DEVELOPMENT
+#if WITH_LOGS
 
 #define TURBO_LOG(VERBOSITY, FMT, ...)                                                                                 \
 	do                                                                                                                 \
@@ -99,7 +100,7 @@ void Turbo_FlushLog()
 		Turbo_LogImpl(VERBOSITY, __filename, __LINE__, FMT __VA_OPT__(, ) __VA_ARGS__);                                \
 	} while (false)
 
-#elif TURBO_SHIPPING
+#else
 
 #define TURBO_LOG(VERBOSITY, FMT, ...) do {} while(false)
 

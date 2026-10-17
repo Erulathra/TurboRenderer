@@ -4,8 +4,8 @@ Standard: c++20
 BasedOnStyle: LLVM
 
 UseTab: Always
-TabWidth: 4
-IndentWidth: 4
+TabWidth: 3
+IndentWidth: 3
 ColumnLimit: 120
 
 AccessModifierOffset: -4

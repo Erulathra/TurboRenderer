@@ -13,6 +13,8 @@ namespace Turbo
 		TURBO_LOG(Log, "Test Log");
 		TURBO_LOG(Warning, "Test Warning");
 		TURBO_LOG(Error, "Test Error");
+
+		check(false);
 	}
 
 	void Engine::Shutdown() { TURBO_LOG(Log, "Goodbye World!"); }
