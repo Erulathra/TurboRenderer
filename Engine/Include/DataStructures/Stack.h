@@ -1,6 +1,11 @@
 #pragma once
 
+// NOTE(SS): Disable initializer_list for now. I will decide later if this required.
+#define WITH_INITIALIZER_LIST 0
+
+#if WITH_INITIALIZER_LIST
 #include <initializer_list>
+#endif // WITH_INITIALIZER_LIST
 
 template <typename T, u32 capacity>
 struct TStaticStack
@@ -15,6 +20,7 @@ struct TStaticStack
 	{
 	}
 
+#if WITH_INITIALIZER_LIST
 	constexpr TStaticStack(std::initializer_list<T>&& initializerList)
 	{
 		check(initializerList.size() <= capacity);
@@ -42,6 +48,7 @@ struct TStaticStack
 
 		return *this;
 	}
+#endif // WITH_INITIALIZER_LIST
 
 	T& Push(const T& newElement)
 	{
