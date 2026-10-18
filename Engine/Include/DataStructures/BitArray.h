@@ -102,9 +102,9 @@ namespace Turbo
 		{
 			for (u32 dataIndex = 0; dataIndex < mNumWords; ++dataIndex)
 			{
-				if (const u32 trainlingOnes = CountTrailingOnes(mData[dataIndex]); trainlingOnes < 32)
+				if (const u32 trailingOnes = CountTrailingOnes(mData[dataIndex]); trailingOnes < 32)
 				{
-					return dataIndex * 32 + trainlingOnes;
+					return dataIndex * 32 + trailingOnes;
 				}
 			}
 

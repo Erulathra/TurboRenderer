@@ -28,7 +28,7 @@ namespace Turbo
 	inline void Memcpy(void* dst, const void* src, u64 numBytes) { memcpy(dst, src, numBytes); }
 
 	// ##################################################################################
-	//                                 Bit Intristics
+	//                                 Bit Intrinsics
 	// ##################################################################################
 
 	inline u32 CountTrailingZeros(u32 value) { return __builtin_ctz(value); }
