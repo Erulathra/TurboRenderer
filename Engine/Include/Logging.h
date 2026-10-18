@@ -4,7 +4,13 @@
 #include <stdio.h>
 #include <string.h>
 
-#define WITH_LOGS TURBO_DEVELOPMENT
+#define WITH_LOGS 1
+
+#if TURBO_DEVELOPMENT
+#define LOG_VERBOSITY (Log)
+#elif TURBO_SHIPPING
+#define LOG_VERBOSITY (Warning)
+#endif // TURBO_SHIPPING
 
 namespace ANSIColor
 {
@@ -14,7 +20,7 @@ namespace ANSIColor
 	inline const char* Reset      = "\x1B[0m";
 } // namespace ANSIColor
 
-enum LogVerbosity
+enum LogVerbosity : u8
 {
 	Log,
 	Warning,
@@ -89,10 +95,13 @@ inline void Turbo_FlushLog()
 #if WITH_LOGS
 
 #define TURBO_LOG(VERBOSITY, FMT, ...)                                                                                 \
-	do                                                                                                                 \
-	{                                                                                                                  \
-		const char* __filename = (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__);                     \
-		Turbo_LogImpl(VERBOSITY, __filename, __LINE__, FMT __VA_OPT__(, ) __VA_ARGS__);                                \
+	do                                                                                                                  \
+	{                                                                                                                   \
+		if constexpr (VERBOSITY >= LOG_VERBOSITY)                                                                        \
+		{                                                                                                                \
+			const char* __filename = (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__);                    \
+			Turbo_LogImpl(VERBOSITY, __filename, __LINE__, FMT __VA_OPT__(, ) __VA_ARGS__);                               \
+		}                                                                                                                \
 	} while (false)
 
 #else
