@@ -7,8 +7,9 @@ static_assert(PLATFORM_LINUX, "This file supports only Linux");
 
 namespace Turbo
 {
+
 	// ##################################################################################
-	//                                        Memory
+	//                                      Memory
 	// ##################################################################################
 
 	inline void* AllocateProgramMemory(u64 size)

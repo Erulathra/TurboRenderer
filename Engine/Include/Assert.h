@@ -22,6 +22,6 @@
 
 #else // WITH_ASSERTIONS
 
-#define check(CONDITION) ((void)0)
+#define check(CONDITION) ((void)(CONDITION))
 
 #endif // else WITH_ASSERTIONS

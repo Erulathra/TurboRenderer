@@ -8,10 +8,10 @@
 
 namespace ANSIColor
 {
-	const char* BoldWhite  = "\x1B[1;37m";
-	const char* BoldYellow = "\x1B[1;33m";
-	const char* BoldRed    = "\x1B[1;31m";
-	const char* Reset      = "\x1B[0m";
+	inline const char* BoldWhite  = "\x1B[1;37m";
+	inline const char* BoldYellow = "\x1B[1;33m";
+	inline const char* BoldRed    = "\x1B[1;31m";
+	inline const char* Reset      = "\x1B[0m";
 } // namespace ANSIColor
 
 enum LogVerbosity
@@ -21,7 +21,7 @@ enum LogVerbosity
 	Error
 };
 
-LiteralString ToLogString(LogVerbosity verbosity)
+inline LiteralString ToLogString(LogVerbosity verbosity)
 {
 	switch (verbosity)
 	{
@@ -39,7 +39,7 @@ LiteralString ToLogString(LogVerbosity verbosity)
 	return "Invalid";
 }
 
-const char* GetANSIColor(LogVerbosity verbosity)
+inline const char* GetANSIColor(LogVerbosity verbosity)
 {
 	switch (verbosity)
 	{
@@ -58,7 +58,7 @@ const char* GetANSIColor(LogVerbosity verbosity)
 
 }
 
-void Turbo_LogImpl(LogVerbosity verbosity, const char* fileName, u32 lineNumber, const char* fmt, ...)
+inline void Turbo_LogImpl(LogVerbosity verbosity, const char* fileName, u32 lineNumber, const char* fmt, ...)
 {
 	// TODO(SS): Implement without malloc, and make it thread-safe (ring-buffer ?)
 	constexpr u32 logBufferSize = 2048;
@@ -81,7 +81,7 @@ void Turbo_LogImpl(LogVerbosity verbosity, const char* fileName, u32 lineNumber,
 	);
 }
 
-void Turbo_FlushLog()
+inline void Turbo_FlushLog()
 {
 	fflush(stdout);
 }

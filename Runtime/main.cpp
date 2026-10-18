@@ -1,5 +1,7 @@
 #include "Engine.h"
 
+#include "signal.h"
+
 i32 main(i32 argc, char* argv[])
 {
 	constexpr u64 kPermamentSize = 128 * Turbo::kMebi;
@@ -11,5 +13,10 @@ i32 main(i32 argc, char* argv[])
 
 	Turbo::Engine engine = {};
 	engine.Init(permamentMemory, kPermamentSize, transientMemory, kTransientSize);
+
+	while (engine.Tick())
+	{
+	}
+
 	engine.Shutdown();
 }
