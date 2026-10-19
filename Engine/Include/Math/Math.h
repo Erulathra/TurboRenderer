@@ -2,6 +2,9 @@
 
 #include <math.h>
 
+#define SMALL_NUMBER 1e-4
+#define VERY_SMALL_NUMBER 1e-8
+
 namespace Turbo
 {
 	// ##################################################################################
@@ -26,6 +29,12 @@ namespace Turbo
 		T temp = a;
 		a = b;
 		b = temp;
+	}
+
+	template <typename T>
+	T Sqrt(T& a)
+	{
+		return sqrt(a);
 	}
 
 	// ##################################################################################
