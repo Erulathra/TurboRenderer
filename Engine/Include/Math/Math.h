@@ -32,7 +32,7 @@ namespace Turbo
 	}
 
 	template <typename T>
-	T Sqrt(T& a)
+	T Sqrt(T a)
 	{
 		return sqrt(a);
 	}

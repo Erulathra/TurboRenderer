@@ -13,27 +13,23 @@ namespace Turbo
 
 		/* ctors */
 		constexpr TVec2()
-			: x(0)
-			, y(0)
+			: x(0), y(0)
 		{
 		}
 
 		constexpr TVec2(T inX, T inY)
-			: x(inX)
-			, y(inY)
+			: x(inX), y(inY)
 		{
 		}
 
 		constexpr TVec2(T val)
-			: x(val)
-			, y(val)
+			: x(val), y(val)
 		{
 		}
 
 		template <typename OtherT>
 		constexpr TVec2(const TVec2<OtherT>& vec2)
-			: x(vec2.x)
-			, y(vec2.y)
+			: x(vec2.x), y(vec2.y)
 		{
 		}
 
@@ -68,8 +64,18 @@ namespace Turbo
 
 		constexpr TVec2 operator/(T rhs) const noexcept { return {x / rhs, y / rhs}; }
 		constexpr void operator/=(T rhs) noexcept { *this = *this / rhs; }
+
+		/* Constants */
+		inline static TVec2 One   = { 1.,  1.};
+		inline static TVec2 Zero  = { 0.,  0.};
+
+		inline static TVec2 Up    = { 1.,  0.};
+		inline static TVec2 Down  = {-1.,  0.};
+		inline static TVec2 Right = { 0.,  1.};
+		inline static TVec2 Left  = { 0., -1.};
 	};
 
+	/* Static functions */
 	template<typename T>
 	constexpr T lengthSq(const TVec2<T>& lhs) { return lhs.x * lhs.x + lhs.y * lhs.y; }
 
@@ -85,9 +91,9 @@ namespace Turbo
 	template<typename T>
 	constexpr TVec2<T> normalize(const TVec2<T>& lhs) { return lhs / length(lhs); }
 
+	/* Typedefs */
 	using ivec2 = TVec2<i32>;
 	using uvec2 = TVec2<u32>;
-	using vec2 = TVec2<float>;
+	using vec2  = TVec2<float>;
 	using dvec2 = TVec2<double>;
-
 } // namespace Turbo

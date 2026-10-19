@@ -8,7 +8,7 @@ namespace Turbo
 	void Engine::Init(void* permanent, u64 permanentSize, void* transient, u64 transientSize)
 	{
 		TURBO_LOG(Log, "Welcome to Turbo::Engine!");
-		TURBO_LOG(Log, "Initializing memory. [P: %uMiB, T: %uMiB]", permanentSize / kMebi, transientSize / kMebi);
+		TURBO_LOG(Log, "Initializing memory. [P: %luMiB, T: %luMiB]", permanentSize / kMebi, transientSize / kMebi);
 		mPermanentMemory.Init(permanent, permanentSize);
 		mTransientMemory.Init(transient, transientSize);
 
@@ -28,6 +28,18 @@ namespace Turbo
 	bool Engine::Tick()
 	{
 		Platform::TickPlatform(*mPlatformContext, *this);
+
+		vec2 test = {1.f, 12.f};
+		vec2 test2 = {12.f, 2.f};
+		vec2 test3 = vec2::One;
+
+		TURBO_LOG(Log, "(%f, %f)", test.x, test.y);
+		TURBO_LOG(Log, "(%f, %f)", (test + test2).x, (test + test2).y);
+		TURBO_LOG(Log, "(%f, %f)", (test - test2).x, (test - test2).y);
+		TURBO_LOG(Log, "%f", dot(test, test2));
+		TURBO_LOG(Log, "%f", cross(test, test2));
+		TURBO_LOG(Log, "(%f, %f)", normalize(test).x, normalize(test).y);
+		TURBO_LOG(Log, "One: (%f, %f)", test3.x, test3.y);
 
 		return bShouldTick;
 	}
