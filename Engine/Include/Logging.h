@@ -64,6 +64,7 @@ inline const char* GetANSIColor(LogVerbosity verbosity)
 
 }
 
+TURBO_ATTRIBUTE_PRINTF(4, 5)
 inline void Turbo_LogImpl(LogVerbosity verbosity, const char* fileName, u32 lineNumber, const char* fmt, ...)
 {
 	// TODO(SS): Implement without malloc, and make it thread-safe (ring-buffer ?)
