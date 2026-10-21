@@ -32,13 +32,13 @@ namespace Turbo
 		}
 
 		template <typename OtherT>
-		constexpr TVec2(const TVec2<OtherT>& vec2)
+		constexpr explicit TVec2(const TVec2<OtherT>& vec2)
 			: x(vec2.x), y(vec2.y)
 		{
 		}
 
 		/* Operators */
-		constexpr TVec2& operator=(const TVec2& rhs) noexcept
+		constexpr TVec2& operator=(const TVec2& rhs)
 		{
 			this->x = rhs.x;
 			this->y = rhs.y;
@@ -46,37 +46,37 @@ namespace Turbo
 			return *this;
 		}
 
-		constexpr bool operator==(const TVec2& rhs) const noexcept { return x == rhs.x && y == rhs.y; }
-		constexpr bool operator!=(const TVec2& rhs) const noexcept { return !(*this == rhs); }
+		constexpr bool operator==(const TVec2& rhs) const { return x == rhs.x && y == rhs.y; }
+		constexpr bool operator!=(const TVec2& rhs) const { return !(*this == rhs); }
 
-		constexpr TVec2 operator-() const noexcept { return {-x, -y}; }
+		constexpr TVec2 operator-() const { return TVec2{-x, -y}; }
 
-		constexpr TVec2 operator-(const TVec2& rhs) const noexcept { return {x - rhs.x, y - rhs.y}; }
-		constexpr void operator-=(const TVec2& rhs) noexcept { *this = *this - rhs; }
+		constexpr TVec2 operator-(const TVec2& rhs) const { return TVec2{x - rhs.x, y - rhs.y}; }
+		constexpr void operator-=(const TVec2& rhs) { *this = *this - rhs; }
 
-		constexpr TVec2 operator+(const TVec2& rhs) const noexcept { return {x + rhs.x, y + rhs.y}; }
-		constexpr void operator+=(const TVec2& rhs) noexcept { *this = *this + rhs; }
+		constexpr TVec2 operator+(const TVec2& rhs) const { return TVec2{x + rhs.x, y + rhs.y}; }
+		constexpr void operator+=(const TVec2& rhs) { *this = *this + rhs; }
 
-		constexpr TVec2 operator*(const TVec2& rhs) const noexcept { return {x * rhs.x, y * rhs.y}; }
-		constexpr void operator*=(const TVec2& rhs) noexcept { *this = *this * rhs; }
+		constexpr TVec2 operator*(const TVec2& rhs) const { return TVec2{x * rhs.x, y * rhs.y}; }
+		constexpr void operator*=(const TVec2& rhs) { *this = *this * rhs; }
 
-		constexpr TVec2 operator*(T rhs) const noexcept { return {x * rhs, y * rhs}; }
-		constexpr void operator*=(T rhs) noexcept { *this = *this * rhs; }
+		constexpr TVec2 operator*(T rhs) const { return TVec2{x * rhs, y * rhs}; }
+		constexpr void operator*=(T rhs) { *this = *this * rhs; }
 
-		constexpr TVec2 operator/(const TVec2& rhs) const noexcept { return {x / rhs.x, y / rhs.y}; }
-		constexpr void operator/=(const TVec2& rhs) noexcept { *this = *this / rhs; }
+		constexpr TVec2 operator/(const TVec2& rhs) const { return TVec2{x / rhs.x, y / rhs.y}; }
+		constexpr void operator/=(const TVec2& rhs) { *this = *this / rhs; }
 
-		constexpr TVec2 operator/(T rhs) const noexcept { return {x / rhs, y / rhs}; }
-		constexpr void operator/=(T rhs) noexcept { *this = *this / rhs; }
+		constexpr TVec2 operator/(T rhs) const { return TVec2{x / rhs, y / rhs}; }
+		constexpr void operator/=(T rhs) { *this = *this / rhs; }
 
 		/* Constants */
-		inline static TVec2 One   = { 1.,  1.};
-		inline static TVec2 Zero  = { 0.,  0.};
+		inline static TVec2 One   = TVec2{ 1.,  1.};
+		inline static TVec2 Zero  = TVec2{ 0.,  0.};
 
-		inline static TVec2 Up    = { 1.,  0.};
-		inline static TVec2 Down  = {-1.,  0.};
-		inline static TVec2 Right = { 0.,  1.};
-		inline static TVec2 Left  = { 0., -1.};
+		inline static TVec2 Up    = TVec2{ 0.,  1.};
+		inline static TVec2 Down  = TVec2{ 0., -1.};
+		inline static TVec2 Right = TVec2{ 1.,  0.};
+		inline static TVec2 Left  = TVec2{-1.,  0.};
 	};
 
 	/* Static functions */
@@ -129,12 +129,6 @@ namespace Turbo
 		{
 		}
 
-		template <typename OtherT>
-		constexpr TVec3(const TVec3<OtherT>& vec2)
-			: x(vec2.x), y(vec2.y), z(0)
-		{
-		}
-
 		constexpr TVec3(const TVec2<T>& vec2, T inZ)
 			: x(vec2.x), y(vec2.y), z(inZ)
 		{
@@ -145,8 +139,14 @@ namespace Turbo
 			return TVec2<T>{x, y};
 		}
 
+		template <typename OtherT>
+		constexpr explicit TVec3(const TVec3<OtherT>& rhs)
+			: x(rhs.x), y(rhs.y), z(rhs.z)
+		{
+		}
+
 		/* Operators */
-		constexpr TVec3& operator=(const TVec3& rhs) noexcept
+		constexpr TVec3& operator=(const TVec3& rhs)
 		{
 			this->x = rhs.x;
 			this->y = rhs.y;
@@ -155,39 +155,39 @@ namespace Turbo
 			return *this;
 		}
 
-		constexpr bool operator==(const TVec3& rhs) const noexcept { return x == rhs.x && y == rhs.y && z == rhs.z; }
-		constexpr bool operator!=(const TVec3& rhs) const noexcept { return !(*this == rhs); }
+		constexpr bool operator==(const TVec3& rhs) const { return x == rhs.x && y == rhs.y && z == rhs.z; }
+		constexpr bool operator!=(const TVec3& rhs) const { return !(*this == rhs); }
 
-		constexpr TVec3 operator-() const noexcept { return {-x, -y, -z}; }
+		constexpr TVec3 operator-() const { return TVec3{-x, -y, -z}; }
 
-		constexpr TVec3 operator-(const TVec3& rhs) const noexcept { return {x - rhs.x, y - rhs.y, z - rhs.z}; }
-		constexpr void operator-=(const TVec3& rhs) noexcept { *this = *this - rhs; }
+		constexpr TVec3 operator-(const TVec3& rhs) const { return TVec3{x - rhs.x, y - rhs.y, z - rhs.z}; }
+		constexpr void operator-=(const TVec3& rhs) { *this = *this - rhs; }
 
-		constexpr TVec3 operator+(const TVec3& rhs) const noexcept { return {x + rhs.x, y + rhs.y, z + rhs.z}; }
-		constexpr void operator+=(const TVec3& rhs) noexcept { *this = *this + rhs; }
+		constexpr TVec3 operator+(const TVec3& rhs) const { return TVec3{x + rhs.x, y + rhs.y, z + rhs.z}; }
+		constexpr void operator+=(const TVec3& rhs) { *this = *this + rhs; }
 
-		constexpr TVec3 operator*(const TVec3& rhs) const noexcept { return {x * rhs.x, y * rhs.y, z * rhs.z}; }
-		constexpr void operator*=(const TVec3& rhs) noexcept { *this = *this * rhs; }
+		constexpr TVec3 operator*(const TVec3& rhs) const { return TVec3{x * rhs.x, y * rhs.y, z * rhs.z}; }
+		constexpr void operator*=(const TVec3& rhs) { *this = *this * rhs; }
 
-		constexpr TVec3 operator*(T rhs) const noexcept { return {x * rhs, y * rhs, z * rhs}; }
-		constexpr void operator*=(T rhs) noexcept { *this = *this * rhs; }
+		constexpr TVec3 operator*(T rhs) const { return TVec3{x * rhs, y * rhs, z * rhs}; }
+		constexpr void operator*=(T rhs) { *this = *this * rhs; }
 
-		constexpr TVec3 operator/(const TVec3& rhs) const noexcept { return {x / rhs.x, y / rhs.y, z / rhs.z}; }
-		constexpr void operator/=(const TVec3& rhs) noexcept { *this = *this / rhs; }
+		constexpr TVec3 operator/(const TVec3& rhs) const { return TVec3{x / rhs.x, y / rhs.y, z / rhs.z}; }
+		constexpr void operator/=(const TVec3& rhs) { *this = *this / rhs; }
 
-		constexpr TVec3 operator/(T rhs) const noexcept { return {x / rhs, y / rhs, z / rhs}; }
-		constexpr void operator/=(T rhs) noexcept { *this = *this / rhs; }
+		constexpr TVec3 operator/(T rhs) const { return TVec3{x / rhs, y / rhs, z / rhs}; }
+		constexpr void operator/=(T rhs) { *this = *this / rhs; }
 
 		/* Constants */
-		inline static TVec3 One     = { 1.,  1.,  1.};
-		inline static TVec3 Zero    = { 0.,  0.,  0.};
+		inline static TVec3 One     = TVec3{ 1.,  1.,  1.};
+		inline static TVec3 Zero    = TVec3{ 0.,  0.,  0.};
 
-		inline static TVec3 Up      = { 1.,  0.,  0.};
-		inline static TVec3 Down    = {-1.,  0.,  0.};
-		inline static TVec3 Right   = { 0.,  1.,  0.};
-		inline static TVec3 Left    = { 0., -1.,  0.};
-		inline static TVec3 Forward = { 0.,  0.,  1.};
-		inline static TVec3 Back    = { 0.,  0., -1.};
+		inline static TVec3 Up      = TVec3{ 0.,  1.,  0.};
+		inline static TVec3 Down    = TVec3{ 0., -1.,  0.};
+		inline static TVec3 Right   = TVec3{ 1.,  0.,  0.};
+		inline static TVec3 Left    = TVec3{-1.,  0.,  0.};
+		inline static TVec3 Forward = TVec3{ 0.,  0.,  1.};
+		inline static TVec3 Back    = TVec3{ 0.,  0., -1.};
 	};
 
 	/* Static functions */
@@ -218,4 +218,114 @@ namespace Turbo
 	using uvec3 = TVec3<u32>;
 	using vec3  = TVec3<float>;
 	using dvec3 = TVec3<double>;
+
+	// ##################################################################################
+	//                                       TVec4
+	// ##################################################################################
+
+	template <typename T>
+	struct TVec4
+	{
+		/* Data */
+		T x;
+		T y;
+		T z;
+		T w;
+
+		/* ctors */
+		constexpr TVec4()
+			: x(0), y(0), z(0), w(0)
+		{
+		}
+
+		constexpr TVec4(T inX, T inY, T inZ, T inW)
+			: x(inX), y(inY), z(inZ), w(inW)
+		{
+		}
+
+		constexpr TVec4(T val)
+			: x(val), y(val), z(val), w(val)
+		{
+		}
+
+		constexpr TVec4(const TVec2<T>& vec2, T inZ, T inW)
+			: x(vec2.x), y(vec2.y), z(inZ), w(inW)
+		{
+		}
+
+		constexpr TVec4(const TVec3<T>& vec3, T inW)
+			: x(vec3.x), y(vec3.y), z(vec3.z), w(inW)
+		{
+		}
+
+		constexpr explicit operator TVec2<T>() const
+		{
+			return TVec2<T>{x, y};
+		}
+
+		constexpr explicit operator TVec3<T>() const
+		{
+			return TVec3<T>{x, y, z};
+		}
+
+		template <typename OtherT>
+		constexpr explicit TVec4(const TVec4<OtherT>& rhs)
+			: x(rhs.x), y(rhs.y), z(rhs.z), w(rhs.w)
+		{
+		}
+
+		/* Operators */
+		constexpr TVec4& operator=(const TVec4& rhs)
+		{
+			this->x = rhs.x;
+			this->y = rhs.y;
+			this->z = rhs.z;
+			this->w = rhs.w;
+
+			return *this;
+		}
+
+		constexpr bool operator==(const TVec4& rhs) const { return x == rhs.x && y == rhs.y && z == rhs.z && w == rhs.w; }
+		constexpr bool operator!=(const TVec4& rhs) const { return !(*this == rhs); }
+
+		constexpr TVec4 operator-() const { return TVec4{-x, -y, -z, -w}; }
+
+		constexpr TVec4 operator-(const TVec4& rhs) const { return TVec4{x - rhs.x, y - rhs.y, z - rhs.z, w - rhs.w}; }
+		constexpr void operator-=(const TVec4& rhs) { *this = *this - rhs; }
+
+		constexpr TVec4 operator+(const TVec4& rhs) const { return TVec4{x + rhs.x, y + rhs.y, z + rhs.z, w + rhs.w}; }
+		constexpr void operator+=(const TVec4& rhs) { *this = *this + rhs; }
+
+		constexpr TVec4 operator*(const TVec4& rhs) const { return TVec4{x * rhs.x, y * rhs.y, z * rhs.z, w * rhs.w}; }
+		constexpr void operator*=(const TVec4& rhs) { *this = *this * rhs; }
+
+		constexpr TVec4 operator*(T rhs) const { return TVec4{x * rhs, y * rhs, z * rhs, w * rhs}; }
+		constexpr void operator*=(T rhs) { *this = *this * rhs; }
+
+		constexpr TVec4 operator/(const TVec4& rhs) const { return TVec4{x / rhs.x, y / rhs.y, z / rhs.z, w / rhs.w}; }
+		constexpr void operator/=(const TVec4& rhs) { *this = *this / rhs; }
+
+		constexpr TVec4 operator/(T rhs) const { return TVec4{x / rhs, y / rhs, z / rhs, w / rhs}; }
+		constexpr void operator/=(T rhs) { *this = *this / rhs; }
+
+		/* Constants */
+		inline static TVec4 One     = TVec4{ 1.,  1.,  1., 1.};
+		inline static TVec4 Zero    = TVec4{ 0.,  0.,  0., 0.};
+	};
+
+	/* Static functions */
+	template<typename T>
+	constexpr T lengthSq(const TVec4<T>& lhs) { return lhs.x * lhs.x + lhs.y * lhs.y + lhs.z * lhs.z + lhs.w * lhs.w; }
+
+	template<typename T>
+	constexpr T length(const TVec4<T>& lhs) { return Sqrt(lengthSq(lhs)); }
+
+	template<typename T>
+	constexpr TVec4<T> normalize(const TVec4<T>& lhs) { return lhs / length(lhs); }
+
+	/* Typedefs */
+	using ivec4 = TVec4<i32>;
+	using uvec4 = TVec4<u32>;
+	using vec4  = TVec4<float>;
+	using dvec4 = TVec4<double>;
 } // namespace Turbo
