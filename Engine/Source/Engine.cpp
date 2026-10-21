@@ -34,9 +34,9 @@ namespace Turbo
 		TURBO_LOG(Log, "(%f, %f)", test.x, test.y);
 		TURBO_LOG(Log, "(%f, %f)", (test + test2).x, (test + test2).y);
 		TURBO_LOG(Log, "(%f, %f)", (test - test2).x, (test - test2).y);
-		TURBO_LOG(Log, "%f", dot(test, test2));
-		TURBO_LOG(Log, "%f", cross(test, test2));
-		TURBO_LOG(Log, "(%f, %f)", normalize(test).x, normalize(test).y);
+		TURBO_LOG(Log, "%f", Dot(test, test2));
+		TURBO_LOG(Log, "%f", Cross(test, test2));
+		TURBO_LOG(Log, "(%f, %f)", Normalize(test).x, Normalize(test).y);
 		TURBO_LOG(Log, "One: (%f, %f)", test3.x, test3.y);
 
 		return bShouldTick;

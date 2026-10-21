@@ -69,6 +69,13 @@ namespace Turbo
 		constexpr TVec2 operator/(T rhs) const { return TVec2{x / rhs, y / rhs}; }
 		constexpr void operator/=(T rhs) { *this = *this / rhs; }
 
+		/* Static functions */
+		static constexpr T LengthSq(const TVec2& lhs) { return lhs.x * lhs.x + lhs.y * lhs.y; }
+		static constexpr T Length(const TVec2& lhs) { return Sqrt(LengthSq(lhs)); }
+		static constexpr T Dot(const TVec2& lhs, const TVec2& rhs) { return lhs.x * rhs.x + lhs.y * rhs.y; }
+		static constexpr T Cross(const TVec2& lhs, const TVec2& rhs) { return lhs.x * rhs.y - lhs.y * rhs.x; }
+		static constexpr TVec2<T> Normalize(const TVec2& lhs) { return lhs / Length(lhs); }
+
 		/* Constants */
 		inline static TVec2 One   = TVec2{ 1.,  1.};
 		inline static TVec2 Zero  = TVec2{ 0.,  0.};
@@ -78,22 +85,6 @@ namespace Turbo
 		inline static TVec2 Right = TVec2{ 1.,  0.};
 		inline static TVec2 Left  = TVec2{-1.,  0.};
 	};
-
-	/* Static functions */
-	template<typename T>
-	constexpr T lengthSq(const TVec2<T>& lhs) { return lhs.x * lhs.x + lhs.y * lhs.y; }
-
-	template<typename T>
-	constexpr T length(const TVec2<T>& lhs) { return Sqrt(lengthSq(lhs)); }
-
-	template<typename T>
-	constexpr T dot(const TVec2<T>& lhs, const TVec2<T>& rhs) { return lhs.x * rhs.x + lhs.y * rhs.y; }
-
-	template<typename T>
-	constexpr T cross(const TVec2<T>& lhs, const TVec2<T>& rhs) { return lhs.x * rhs.y - lhs.y * rhs.x; }
-
-	template<typename T>
-	constexpr TVec2<T> normalize(const TVec2<T>& lhs) { return lhs / length(lhs); }
 
 	/* Typedefs */
 	using ivec2 = TVec2<i32>;
@@ -178,6 +169,22 @@ namespace Turbo
 		constexpr TVec3 operator/(T rhs) const { return TVec3{x / rhs, y / rhs, z / rhs}; }
 		constexpr void operator/=(T rhs) { *this = *this / rhs; }
 
+		/* Static functions */
+		static constexpr T LengthSq(const TVec3& lhs) { return lhs.x * lhs.x + lhs.y * lhs.y + lhs.z * lhs.z; }
+		static constexpr T Length(const TVec3& lhs) { return Sqrt(LengthSq(lhs)); }
+		static constexpr T Dot(const TVec3& lhs, const TVec3& rhs) { return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z; }
+
+		static constexpr TVec3 Cross(const TVec3& lhs, const TVec3& rhs)
+		{
+			return {
+				 lhs.y * rhs.z - lhs.z * rhs.y,
+				 lhs.z * rhs.x - lhs.x * rhs.z,
+				 lhs.x * rhs.y - lhs.y * rhs.x,
+			};
+		}
+
+		static constexpr TVec3 Normalize(const TVec3& lhs) { return lhs / Length(lhs); }
+
 		/* Constants */
 		inline static TVec3 One     = TVec3{ 1.,  1.,  1.};
 		inline static TVec3 Zero    = TVec3{ 0.,  0.,  0.};
@@ -190,28 +197,6 @@ namespace Turbo
 		inline static TVec3 Back    = TVec3{ 0.,  0., -1.};
 	};
 
-	/* Static functions */
-	template<typename T>
-	constexpr T lengthSq(const TVec3<T>& lhs) { return lhs.x * lhs.x + lhs.y * lhs.y + lhs.z * lhs.z; }
-
-	template<typename T>
-	constexpr T length(const TVec3<T>& lhs) { return Sqrt(lengthSq(lhs)); }
-
-	template<typename T>
-	constexpr T dot(const TVec3<T>& lhs, const TVec3<T>& rhs) { return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * lhs.z; }
-
-	template <typename T>
-	constexpr TVec3<T> cross(const TVec3<T>& lhs, const TVec3<T>& rhs)
-	{
-		return {
-			 lhs.y * rhs.z - lhs.z * rhs.y,
-			 lhs.z * rhs.x - lhs.x * rhs.z,
-			 lhs.x * rhs.y - lhs.y * rhs.x,
-		};
-	}
-
-	template<typename T>
-	constexpr TVec3<T> normalize(const TVec3<T>& lhs) { return lhs / length(lhs); }
 
 	/* Typedefs */
 	using ivec3 = TVec3<i32>;
@@ -308,20 +293,15 @@ namespace Turbo
 		constexpr TVec4 operator/(T rhs) const { return TVec4{x / rhs, y / rhs, z / rhs, w / rhs}; }
 		constexpr void operator/=(T rhs) { *this = *this / rhs; }
 
+		/* Static functions */
+		static constexpr T LengthSq(const TVec4& lhs) { return lhs.x * lhs.x + lhs.y * lhs.y + lhs.z * lhs.z + lhs.w * lhs.w; }
+		static constexpr T Length(const TVec4& lhs) { return Sqrt(LengthSq(lhs)); }
+		static constexpr TVec4 Normalize(const TVec4& lhs) { return lhs / Length(lhs); }
+
 		/* Constants */
 		inline static TVec4 One  = TVec4{ 1.,  1.,  1., 1.};
 		inline static TVec4 Zero = TVec4{ 0.,  0.,  0., 0.};
 	};
-
-	/* Static functions */
-	template<typename T>
-	constexpr T lengthSq(const TVec4<T>& lhs) { return lhs.x * lhs.x + lhs.y * lhs.y + lhs.z * lhs.z + lhs.w * lhs.w; }
-
-	template<typename T>
-	constexpr T length(const TVec4<T>& lhs) { return Sqrt(lengthSq(lhs)); }
-
-	template<typename T>
-	constexpr TVec4<T> normalize(const TVec4<T>& lhs) { return lhs / length(lhs); }
 
 	/* Typedefs */
 	using ivec4 = TVec4<i32>;
