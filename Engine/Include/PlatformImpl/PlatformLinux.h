@@ -7,6 +7,8 @@ static_assert(PLATFORM_LINUX, "This file supports only Linux");
 
 #define TURBO_ATTRIBUTE_PRINTF(fmtIdx, argsIdx) __attribute__((__format__(__printf__, fmtIdx, argsIdx)))
 
+#define FORCEINLINE __attribute__((always_inline))
+
 namespace Turbo
 {
 

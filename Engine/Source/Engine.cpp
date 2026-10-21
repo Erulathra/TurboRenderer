@@ -27,16 +27,18 @@ namespace Turbo
 	{
 		Platform::TickPlatform(*mPlatformContext, *this);
 
-		vec2 test = {1.f, 12.f};
-		vec2 test2 = {12.f, 2.f};
-		vec2 test3 = vec2::One;
+		Vec2 test = {1.f, 12.f};
+		Vec2 test2 = {12.f, 2.f};
+		Vec2 test3 = Vec2::One();
+
+		constexpr Vec2 test4 = Vec2::Right();
 
 		TURBO_LOG(Log, "(%f, %f)", test.x, test.y);
 		TURBO_LOG(Log, "(%f, %f)", (test + test2).x, (test + test2).y);
 		TURBO_LOG(Log, "(%f, %f)", (test - test2).x, (test - test2).y);
-		TURBO_LOG(Log, "%f", Dot(test, test2));
-		TURBO_LOG(Log, "%f", Cross(test, test2));
-		TURBO_LOG(Log, "(%f, %f)", Normalize(test).x, Normalize(test).y);
+		TURBO_LOG(Log, "%f", Vec2::Dot(test, test2));
+		TURBO_LOG(Log, "%f", Vec2::Cross(test, test2));
+		TURBO_LOG(Log, "(%f, %f)", Vec2::Normalize(test).x, Vec2::Normalize(test).y);
 		TURBO_LOG(Log, "One: (%f, %f)", test3.x, test3.y);
 
 		return bShouldTick;

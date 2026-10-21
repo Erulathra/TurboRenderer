@@ -70,27 +70,29 @@ namespace Turbo
 		constexpr void operator/=(T rhs) { *this = *this / rhs; }
 
 		/* Static functions */
-		static constexpr T LengthSq(const TVec2& lhs) { return lhs.x * lhs.x + lhs.y * lhs.y; }
-		static constexpr T Length(const TVec2& lhs) { return Sqrt(LengthSq(lhs)); }
-		static constexpr T Dot(const TVec2& lhs, const TVec2& rhs) { return lhs.x * rhs.x + lhs.y * rhs.y; }
-		static constexpr T Cross(const TVec2& lhs, const TVec2& rhs) { return lhs.x * rhs.y - lhs.y * rhs.x; }
-		static constexpr TVec2<T> Normalize(const TVec2& lhs) { return lhs / Length(lhs); }
+		constexpr static T LengthSq(const TVec2& lhs) { return lhs.x * lhs.x + lhs.y * lhs.y; }
+		constexpr static T Length(const TVec2& lhs) { return Sqrt(LengthSq(lhs)); }
+		constexpr static T Dot(const TVec2& lhs, const TVec2& rhs) { return lhs.x * rhs.x + lhs.y * rhs.y; }
+		constexpr static T Cross(const TVec2& lhs, const TVec2& rhs) { return lhs.x * rhs.y - lhs.y * rhs.x; }
+		constexpr static TVec2<T> Normalize(const TVec2& lhs) { return lhs / Length(lhs); }
 
 		/* Constants */
-		inline static TVec2 One   = TVec2{ 1.,  1.};
-		inline static TVec2 Zero  = TVec2{ 0.,  0.};
+		FORCEINLINE constexpr static TVec2 One()   { return TVec2{ 1.,  1.}; }
+		FORCEINLINE constexpr static TVec2 Zero()  { return TVec2{ 0.,  0.}; }
 
-		inline static TVec2 Up    = TVec2{ 0.,  1.};
-		inline static TVec2 Down  = TVec2{ 0., -1.};
-		inline static TVec2 Right = TVec2{ 1.,  0.};
-		inline static TVec2 Left  = TVec2{-1.,  0.};
+		FORCEINLINE constexpr static TVec2 Up()    { return TVec2{ 0.,  1.}; }
+		FORCEINLINE constexpr static TVec2 Down()  { return TVec2{ 0., -1.}; }
+		FORCEINLINE constexpr static TVec2 Right() { return TVec2{ 1.,  0.}; }
+		FORCEINLINE constexpr static TVec2 Left()  { return TVec2{-1.,  0.}; }
 	};
 
+
+
 	/* Typedefs */
-	using ivec2 = TVec2<i32>;
-	using uvec2 = TVec2<u32>;
-	using vec2  = TVec2<float>;
-	using dvec2 = TVec2<double>;
+	using IVec2 = TVec2<i32>;
+	using UVec2 = TVec2<u32>;
+	using Vec2  = TVec2<float>;
+	using DVec2 = TVec2<double>;
 
 	// ##################################################################################
 	//                                       TVec3
@@ -170,11 +172,11 @@ namespace Turbo
 		constexpr void operator/=(T rhs) { *this = *this / rhs; }
 
 		/* Static functions */
-		static constexpr T LengthSq(const TVec3& lhs) { return lhs.x * lhs.x + lhs.y * lhs.y + lhs.z * lhs.z; }
-		static constexpr T Length(const TVec3& lhs) { return Sqrt(LengthSq(lhs)); }
-		static constexpr T Dot(const TVec3& lhs, const TVec3& rhs) { return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z; }
+		constexpr static T LengthSq(const TVec3& lhs) { return lhs.x * lhs.x + lhs.y * lhs.y + lhs.z * lhs.z; }
+		constexpr static T Length(const TVec3& lhs) { return Sqrt(LengthSq(lhs)); }
+		constexpr static T Dot(const TVec3& lhs, const TVec3& rhs) { return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z; }
 
-		static constexpr TVec3 Cross(const TVec3& lhs, const TVec3& rhs)
+		constexpr static TVec3 Cross(const TVec3& lhs, const TVec3& rhs)
 		{
 			return {
 				 lhs.y * rhs.z - lhs.z * rhs.y,
@@ -183,26 +185,26 @@ namespace Turbo
 			};
 		}
 
-		static constexpr TVec3 Normalize(const TVec3& lhs) { return lhs / Length(lhs); }
+		constexpr static TVec3 Normalize(const TVec3& lhs) { return lhs / Length(lhs); }
 
 		/* Constants */
-		inline static TVec3 One     = TVec3{ 1.,  1.,  1.};
-		inline static TVec3 Zero    = TVec3{ 0.,  0.,  0.};
+		FORCEINLINE constexpr static TVec3 One()     { return TVec3{ 1.,  1.,  1.}; }
+		FORCEINLINE constexpr static TVec3 Zero()    { return TVec3{ 0.,  0.,  0.}; }
 
-		inline static TVec3 Up      = TVec3{ 0.,  1.,  0.};
-		inline static TVec3 Down    = TVec3{ 0., -1.,  0.};
-		inline static TVec3 Right   = TVec3{ 1.,  0.,  0.};
-		inline static TVec3 Left    = TVec3{-1.,  0.,  0.};
-		inline static TVec3 Forward = TVec3{ 0.,  0.,  1.};
-		inline static TVec3 Back    = TVec3{ 0.,  0., -1.};
+		FORCEINLINE constexpr static TVec3 Up()      { return TVec3{ 0.,  1.,  0.}; }
+		FORCEINLINE constexpr static TVec3 Down()    { return TVec3{ 0., -1.,  0.}; }
+		FORCEINLINE constexpr static TVec3 Right()   { return TVec3{ 1.,  0.,  0.}; }
+		FORCEINLINE constexpr static TVec3 Left()    { return TVec3{-1.,  0.,  0.}; }
+		FORCEINLINE constexpr static TVec3 Forward() { return TVec3{ 0.,  0.,  1.}; }
+		FORCEINLINE constexpr static TVec3 Back()    { return TVec3{ 0.,  0., -1.}; }
 	};
 
 
 	/* Typedefs */
-	using ivec3 = TVec3<i32>;
-	using uvec3 = TVec3<u32>;
-	using vec3  = TVec3<float>;
-	using dvec3 = TVec3<double>;
+	using IVec3 = TVec3<i32>;
+	using UVec3 = TVec3<u32>;
+	using Vec3  = TVec3<float>;
+	using DVec3 = TVec3<double>;
 
 	// ##################################################################################
 	//                                       TVec4
@@ -294,18 +296,18 @@ namespace Turbo
 		constexpr void operator/=(T rhs) { *this = *this / rhs; }
 
 		/* Static functions */
-		static constexpr T LengthSq(const TVec4& lhs) { return lhs.x * lhs.x + lhs.y * lhs.y + lhs.z * lhs.z + lhs.w * lhs.w; }
-		static constexpr T Length(const TVec4& lhs) { return Sqrt(LengthSq(lhs)); }
-		static constexpr TVec4 Normalize(const TVec4& lhs) { return lhs / Length(lhs); }
+		constexpr static T LengthSq(const TVec4& lhs) { return lhs.x * lhs.x + lhs.y * lhs.y + lhs.z * lhs.z + lhs.w * lhs.w; }
+		constexpr static T Length(const TVec4& lhs) { return Sqrt(LengthSq(lhs)); }
+		constexpr static TVec4 Normalize(const TVec4& lhs) { return lhs / Length(lhs); }
 
 		/* Constants */
-		inline static TVec4 One  = TVec4{ 1.,  1.,  1., 1.};
-		inline static TVec4 Zero = TVec4{ 0.,  0.,  0., 0.};
+		FORCEINLINE constexpr static TVec4 One()  { return TVec4{ 1.,  1.,  1., 1.}; }
+		FORCEINLINE constexpr static TVec4 Zero() { return TVec4{ 0.,  0.,  0., 0.}; }
 	};
 
 	/* Typedefs */
-	using ivec4 = TVec4<i32>;
-	using uvec4 = TVec4<u32>;
-	using vec4  = TVec4<float>;
-	using dvec4 = TVec4<double>;
+	using IVec4 = TVec4<i32>;
+	using UVec4 = TVec4<u32>;
+	using Vec4  = TVec4<float>;
+	using DVec4 = TVec4<double>;
 } // namespace Turbo
