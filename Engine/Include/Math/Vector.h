@@ -309,8 +309,8 @@ namespace Turbo
 		constexpr void operator/=(T rhs) { *this = *this / rhs; }
 
 		/* Constants */
-		inline static TVec4 One     = TVec4{ 1.,  1.,  1., 1.};
-		inline static TVec4 Zero    = TVec4{ 0.,  0.,  0., 0.};
+		inline static TVec4 One  = TVec4{ 1.,  1.,  1., 1.};
+		inline static TVec4 Zero = TVec4{ 0.,  0.,  0., 0.};
 	};
 
 	/* Static functions */
