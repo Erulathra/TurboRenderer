@@ -75,6 +75,10 @@ namespace Turbo
 		constexpr static T Dot(const TVec2& lhs, const TVec2& rhs) { return lhs.x * rhs.x + lhs.y * rhs.y; }
 		constexpr static T Cross(const TVec2& lhs, const TVec2& rhs) { return lhs.x * rhs.y - lhs.y * rhs.x; }
 		constexpr static TVec2<T> Normalize(const TVec2& lhs) { return lhs / Length(lhs); }
+		constexpr static bool IsNormalized(const TVec2& lhs, T epsilon = SMALL_NUMBER)
+		{
+			return Abs(LengthSq(lhs) - 1.) < epsilon * epsilon;
+		}
 
 		/* Constants */
 		FORCEINLINE constexpr static TVec2 One()   { return TVec2{ 1.,  1.}; }
@@ -86,7 +90,17 @@ namespace Turbo
 		FORCEINLINE constexpr static TVec2 Left()  { return TVec2{-1.,  0.}; }
 	};
 
-
+	/* Additional operators */
+	template <typename T>
+	constexpr TVec2<T> operator/(T lhs, const TVec2<T>& rhs)
+	{
+		return TVec2{lhs / rhs.x, lhs / rhs.y};
+	}
+	template <typename T>
+	constexpr TVec2<T> operator*(T lhs, const TVec2<T>& rhs)
+	{
+		return TVec2{lhs * rhs.x, lhs * rhs.y};
+	}
 
 	/* Typedefs */
 	using IVec2 = TVec2<i32>;
@@ -186,6 +200,10 @@ namespace Turbo
 		}
 
 		constexpr static TVec3 Normalize(const TVec3& lhs) { return lhs / Length(lhs); }
+		constexpr static bool IsNormalized(const TVec3& lhs, T epsilon = SMALL_NUMBER)
+		{
+			return Abs(LengthSq(lhs) - 1.) < epsilon * epsilon;
+		}
 
 		/* Constants */
 		FORCEINLINE constexpr static TVec3 One()     { return TVec3{ 1.,  1.,  1.}; }
@@ -199,6 +217,17 @@ namespace Turbo
 		FORCEINLINE constexpr static TVec3 Back()    { return TVec3{ 0.,  0., -1.}; }
 	};
 
+	/* Additional operators */
+	template <typename T>
+	constexpr TVec3<T> operator/(T lhs, const TVec3<T>& rhs)
+	{
+		return TVec3{lhs / rhs.x, lhs / rhs.y, lhs / rhs.z};
+	}
+	template <typename T>
+	constexpr TVec3<T> operator*(T lhs, const TVec3<T>& rhs)
+	{
+		return TVec3{lhs * rhs.x, lhs * rhs.y, lhs * rhs.z};
+	}
 
 	/* Typedefs */
 	using IVec3 = TVec3<i32>;
@@ -299,11 +328,27 @@ namespace Turbo
 		constexpr static T LengthSq(const TVec4& lhs) { return lhs.x * lhs.x + lhs.y * lhs.y + lhs.z * lhs.z + lhs.w * lhs.w; }
 		constexpr static T Length(const TVec4& lhs) { return Sqrt(LengthSq(lhs)); }
 		constexpr static TVec4 Normalize(const TVec4& lhs) { return lhs / Length(lhs); }
+		constexpr static bool IsNormalized(const TVec4& lhs, T epsilon = SMALL_NUMBER)
+		{
+			return Abs(LengthSq(lhs) - 1.) < epsilon * epsilon;
+		}
 
 		/* Constants */
 		FORCEINLINE constexpr static TVec4 One()  { return TVec4{ 1.,  1.,  1., 1.}; }
 		FORCEINLINE constexpr static TVec4 Zero() { return TVec4{ 0.,  0.,  0., 0.}; }
 	};
+
+	/* Additional operators */
+	template <typename T>
+	constexpr TVec4<T> operator/(T lhs, const TVec4<T>& rhs)
+	{
+		return TVec4{lhs / rhs.x, lhs / rhs.y, lhs / rhs.z, lhs / rhs.w};
+	}
+	template <typename T>
+	constexpr TVec4<T> operator*(T lhs, const TVec4<T>& rhs)
+	{
+		return TVec4{lhs * rhs.x, lhs * rhs.y, lhs * rhs.z, lhs * rhs.w};
+	}
 
 	/* Typedefs */
 	using IVec4 = TVec4<i32>;

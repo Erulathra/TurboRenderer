@@ -34,6 +34,8 @@ namespace Turbo
 		constexpr Vec2 test4 = Vec2::Right();
 
 		TURBO_LOG(Log, "(%f, %f)", test.x, test.y);
+		test2 = 1.f / test;
+		TURBO_LOG(Log, "(%f, %f)", test.x, test.y);
 		TURBO_LOG(Log, "(%f, %f)", (test + test2).x, (test + test2).y);
 		TURBO_LOG(Log, "(%f, %f)", (test - test2).x, (test - test2).y);
 		TURBO_LOG(Log, "%f", Vec2::Dot(test, test2));
