@@ -5,6 +5,12 @@
 #define SMALL_NUMBER 1e-4
 #define VERY_SMALL_NUMBER 1e-8
 
+#define TE_PI (3.14159265358979323846264)
+#define TE_TAU (6.28318530717958647692528)
+
+#define TE_DEG_TO_RAD (0.01745329251994329576923)
+#define TE_RAD_TO_DEG (57.2957795130823208767981)
+
 namespace Turbo
 {
 	// ##################################################################################
@@ -12,19 +18,19 @@ namespace Turbo
 	// ##################################################################################
 
 	template <typename T>
-	constexpr T Max(T a, T b)
+	FORCEINLINE constexpr T Max(T a, T b)
 	{
 		return max(a, b);
 	}
 
 	template <typename T>
-	constexpr T Min(T a, T b)
+	FORCEINLINE constexpr T Min(T a, T b)
 	{
 		return min(a, b);
 	}
 
 	template <typename T>
-	void Swap(T& a, T& b)
+	FORCEINLINE constexpr void Swap(T& a, T& b)
 	{
 		T temp = a;
 		a = b;
@@ -32,15 +38,52 @@ namespace Turbo
 	}
 
 	template <typename T>
-	T Sqrt(T a)
+	FORCEINLINE constexpr T Sqrt(T x)
 	{
-		return sqrt(a);
+		return sqrt(x);
 	}
 
 	template <typename T>
-	T Abs(T a)
+	FORCEINLINE constexpr T Abs(T x)
 	{
-		return abs(a);
+		return abs(x);
+	}
+
+	template <typename T>
+	FORCEINLINE constexpr T Sin(T x)
+	{
+		return sin(x);
+	}
+
+	template <typename T>
+	FORCEINLINE constexpr T Cos(T x)
+	{
+		return cos(x);
+	}
+
+	template <typename T>
+	FORCEINLINE void SinCos(T x, T& outSin, T& outCos)
+	{
+		// Use sin and cos
+		sincos(x, &outSin, &outCos);
+	}
+
+	template<>
+	inline void SinCos<float>(float x, float& outSin, float& outCos)
+	{
+		sincosf(x, &outSin, &outCos);
+	}
+
+	template<typename T>
+	FORCEINLINE constexpr T DegToRad(T deg)
+	{
+		return deg * (T)TE_DEG_TO_RAD;
+	}
+
+	template<typename T>
+	FORCEINLINE constexpr T RadToDeg(T deg)
+	{
+		return deg * (T)TE_RAD_TO_DEG;
 	}
 
 	// ##################################################################################

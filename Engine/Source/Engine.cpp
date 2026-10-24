@@ -1,4 +1,5 @@
 #include "Engine.h"
+#include "Math/Quaternion.h"
 #include "Math/Vector.h"
 
 namespace Turbo
@@ -27,21 +28,18 @@ namespace Turbo
 	{
 		Platform::TickPlatform(*mPlatformContext, *this);
 
-		Vec2 test = {1.f, 12.f};
-		Vec2 test2 = {12.f, 2.f};
-		Vec2 test3 = Vec2::One();
+		const Vec3 testPos = {1.f, 0.f, 0.f};
+		const Vec3 testPos1 = Quat::Identity().RotateVector(testPos);
 
-		constexpr Vec2 test4 = Vec2::Right();
+		Quat testQuat = Quat::FromAxisAngle(DegToRad(90.f), Vec3{0.f, 0.f, 1.f});
+		const Vec3 testPos2 = testQuat.RotateVector(testPos);
 
-		TURBO_LOG(Log, "(%f, %f)", test.x, test.y);
-		test2 = 1.f / test;
-		TURBO_LOG(Log, "(%f, %f)", test.x, test.y);
-		TURBO_LOG(Log, "(%f, %f)", (test + test2).x, (test + test2).y);
-		TURBO_LOG(Log, "(%f, %f)", (test - test2).x, (test - test2).y);
-		TURBO_LOG(Log, "%f", Vec2::Dot(test, test2));
-		TURBO_LOG(Log, "%f", Vec2::Cross(test, test2));
-		TURBO_LOG(Log, "(%f, %f)", Vec2::Normalize(test).x, Vec2::Normalize(test).y);
-		TURBO_LOG(Log, "One: (%f, %f)", test3.x, test3.y);
+		TURBO_LOG(Log, "--------------------");
+		TURBO_LOG(Log, "OrgPos: (%f, %f, %f)", testPos.x, testPos.y, testPos.z);
+		TURBO_LOG(Log, "Pos1:   (%f, %f, %f)", testPos1.x, testPos1.y, testPos1.z);
+		TURBO_LOG(Log, "Pos2:   (%f, %f, %f)", testPos2.x, testPos2.y, testPos2.z);
+		TURBO_LOG(Log, "--------------------");
+
 
 		return bShouldTick;
 	}

@@ -74,10 +74,16 @@ namespace Turbo
 		constexpr static T Length(const TVec2& lhs) { return Sqrt(LengthSq(lhs)); }
 		constexpr static T Dot(const TVec2& lhs, const TVec2& rhs) { return lhs.x * rhs.x + lhs.y * rhs.y; }
 		constexpr static T Cross(const TVec2& lhs, const TVec2& rhs) { return lhs.x * rhs.y - lhs.y * rhs.x; }
-		constexpr static TVec2<T> Normalize(const TVec2& lhs) { return lhs / Length(lhs); }
+
+		constexpr static TVec2<T> Normalize(const TVec2& lhs)
+		{
+			mathDiagnosticCheck(Length(lhs) > SMALL_NUMBER);
+			return lhs / Length(lhs);
+		}
+
 		constexpr static bool IsNormalized(const TVec2& lhs, T epsilon = SMALL_NUMBER)
 		{
-			return Abs(LengthSq(lhs) - 1.) < epsilon * epsilon;
+			return Abs(LengthSq(lhs) - 1.) < epsilon;
 		}
 
 		/* Constants */
@@ -199,10 +205,15 @@ namespace Turbo
 			};
 		}
 
-		constexpr static TVec3 Normalize(const TVec3& lhs) { return lhs / Length(lhs); }
+		constexpr static TVec3 Normalize(const TVec3& lhs)
+		{
+			mathDiagnosticCheck(Length(lhs) > SMALL_NUMBER);
+			return lhs / Length(lhs);
+		}
+
 		constexpr static bool IsNormalized(const TVec3& lhs, T epsilon = SMALL_NUMBER)
 		{
-			return Abs(LengthSq(lhs) - 1.) < epsilon * epsilon;
+			return Abs(LengthSq(lhs) - 1.) < epsilon;
 		}
 
 		/* Constants */
@@ -327,10 +338,16 @@ namespace Turbo
 		/* Static functions */
 		constexpr static T LengthSq(const TVec4& lhs) { return lhs.x * lhs.x + lhs.y * lhs.y + lhs.z * lhs.z + lhs.w * lhs.w; }
 		constexpr static T Length(const TVec4& lhs) { return Sqrt(LengthSq(lhs)); }
-		constexpr static TVec4 Normalize(const TVec4& lhs) { return lhs / Length(lhs); }
+
+		constexpr static TVec4 Normalize(const TVec4& lhs)
+		{
+			mathDiagnosticCheck(Length(lhs) > SMALL_NUMBER);
+			return lhs / Length(lhs);
+		}
+
 		constexpr static bool IsNormalized(const TVec4& lhs, T epsilon = SMALL_NUMBER)
 		{
-			return Abs(LengthSq(lhs) - 1.) < epsilon * epsilon;
+			return Abs(LengthSq(lhs) - 1.) < epsilon;
 		}
 
 		/* Constants */

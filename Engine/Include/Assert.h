@@ -25,3 +25,5 @@
 #define check(CONDITION) ((void)(CONDITION))
 
 #endif // else WITH_ASSERTIONS
+
+#define mathDiagnosticCheck(CONDITION) check(CONDITION)
