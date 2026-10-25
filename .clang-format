@@ -6,9 +6,10 @@ BasedOnStyle: LLVM
 UseTab: Always
 TabWidth: 3
 IndentWidth: 3
+ContinuationIndentWidth: 3
 ColumnLimit: 120
 
-AccessModifierOffset: -4
+AccessModifierOffset: -3
 
 NamespaceIndentation: All
 
