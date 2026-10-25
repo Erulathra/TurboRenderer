@@ -1,7 +1,7 @@
 #pragma once
 
-#include <sys/mman.h>
 #include <string.h>
+#include <sys/mman.h>
 
 static_assert(PLATFORM_LINUX, "This file supports only Linux");
 
@@ -30,4 +30,10 @@ namespace Turbo
 	FORCEINLINE u32 CountLeadingZeros(u32 value) { return __builtin_clz(value); }
 	FORCEINLINE u32 CountTrailingOnes(u32 value) { return __builtin_ctz(~value); }
 	FORCEINLINE u32 CountLeadingOnes(u32 value) { return __builtin_clz(~value); }
+
+	// ##################################################################################
+	//                                     Windowing
+	// ##################################################################################
+
+	const char** GetRequiredVulkanWindowExtensions(u32& extensionsCount);
 } // namespace Turbo

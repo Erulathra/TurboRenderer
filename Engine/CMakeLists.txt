@@ -2,6 +2,7 @@ set(ENGINE_TARGET_NAME TurboEngine)
 
 set(SOURCE_FILES
 	Source/Engine.cpp
+	Source/Renderer/Renderer.cpp
 )
 
 # Linux platform implementation
@@ -15,3 +16,4 @@ target_include_directories(${ENGINE_TARGET_NAME} PUBLIC Include)
 target_precompile_headers(${ENGINE_TARGET_NAME} PUBLIC pch.h)
 
 target_link_libraries(${ENGINE_TARGET_NAME} PRIVATE glfw)
+target_link_libraries(${ENGINE_TARGET_NAME} PRIVATE volk_headers)

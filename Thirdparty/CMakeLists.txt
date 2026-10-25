@@ -9,4 +9,14 @@ CPMAddPackage(
           "GLFW_BUILD_DOCS OFF"
 )
 
-set_target_properties(glfw PROPERTIES FOLDER "thirdparty")
+CPMAddPackage(
+  NAME volk
+  GITHUB_REPOSITORY zeux/volk
+  GIT_TAG vulkan-sdk-1.4.363.0
+)
+
+set_target_properties(
+	glfw
+	volk
+	PROPERTIES FOLDER "thirdparty"
+)

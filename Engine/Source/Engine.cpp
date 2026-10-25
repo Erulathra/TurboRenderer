@@ -1,4 +1,7 @@
 #include "Engine.h"
+
+#include "Renderer/Renderer.h"
+
 #include "Math/Quaternion.h"
 #include "Math/Vector.h"
 
@@ -8,11 +11,14 @@ namespace Turbo
 	{
 		TURBO_LOG(Log, "Welcome to Turbo::Engine!");
 		TURBO_LOG(Log, "Initializing memory. [P: %luMiB, T: %luMiB]", permanentSize / kMebi, transientSize / kMebi);
-		mPermanentMemory.Init(permanent, permanentSize);
+		mPersistentMemory.Init(permanent, permanentSize);
 		mTransientMemory.Init(transient, transientSize);
 
-		mPlatformContext = Platform::Init(mPermanentMemory);
+		mPlatformContext = Platform::Init(mPersistentMemory);
 		check(mPlatformContext);
+
+		mGpu = GPUDevice::Create(this);
+		mGpu->Init(this);
 
 		bShouldTick = true;
 	}
@@ -21,26 +27,14 @@ namespace Turbo
 	{
 		TURBO_LOG(Log, "Shutting down Turbo::Engine.");
 
+		mGpu->Shutdown(this);
+
 		Platform::Shutdown(*mPlatformContext);
 	}
 
 	bool Engine::Tick()
 	{
 		Platform::TickPlatform(*mPlatformContext, *this);
-
-		const Vec3 testPos = {1.f, 0.f, 0.f};
-		const Vec3 testPos1 = Quat::Identity().RotateVector(testPos);
-
-		Quat testQuat = Quat::FromAxisAngle(DegToRad(90.f), Vec3{0.f, 0.f, 1.f});
-		const Vec3 testPos2 = testQuat.RotateVector(testPos);
-
-		TURBO_LOG(Log, "--------------------");
-		TURBO_LOG(Log, "OrgPos: (%f, %f, %f)", testPos.x, testPos.y, testPos.z);
-		TURBO_LOG(Log, "Pos1:   (%f, %f, %f)", testPos1.x, testPos1.y, testPos1.z);
-		TURBO_LOG(Log, "Pos2:   (%f, %f, %f)", testPos2.x, testPos2.y, testPos2.z);
-		TURBO_LOG(Log, "--------------------");
-
-
 		return bShouldTick;
 	}
 

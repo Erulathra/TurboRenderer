@@ -4,6 +4,8 @@
 
 namespace Turbo
 {
+	struct GPUDevice;
+
 	enum struct EventType : u32
 	{
 		Sigint,
@@ -16,10 +18,11 @@ namespace Turbo
 	struct Engine
 	{
 		/* Data */
-		Arena mPermanentMemory = {};
+		Arena mPersistentMemory = {};
 		Arena mTransientMemory = {};
 
 		Platform::Context* mPlatformContext = nullptr;
+		GPUDevice* mGpu = nullptr;
 
 		bool bShouldTick = false;
 

@@ -35,6 +35,7 @@ namespace Turbo
 		template<typename T>
 		T* Allocate()
 		{
+			static_assert(16 % alignof(T) == 0);
 		   return (T*)Allocate(sizeof(T));
 		}
 
