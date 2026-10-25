@@ -90,7 +90,9 @@ inline void Turbo_LogImpl(LogVerbosity verbosity, const char* fileName, u32 line
 
 inline void Turbo_FlushLog()
 {
+#if WITH_LOGS
 	fflush(stdout);
+#endif // WITH_LOGS
 }
 
 #if WITH_LOGS
