@@ -19,7 +19,6 @@ namespace Turbo
 	{
 		VkInstance mVkInstance = nullptr;
 		VkPhysicalDevice mVkPhysicalDevice = nullptr;
-		VkDevice mVkDevice = nullptr;
 	};
 
 	GPUDevice* GPUDevice::Create(Engine* engine) { return engine->mPersistentMemory.Allocate<GPUDevice>(); }
@@ -46,8 +45,57 @@ namespace Turbo
 			};
 
 			vkCheck(vkCreateInstance(&instanceCI, nullptr, &mCtx->mVkInstance));
+			volkLoadInstance(mCtx->mVkInstance);
+		}
+
+		/* Select best physical device */
+		{
+			u32 deviceCount = 4;
+			VkPhysicalDevice physicalDevices[deviceCount];
+			vkCheck(vkEnumeratePhysicalDevices(mCtx->mVkInstance, &deviceCount, physicalDevices));
+			verify(deviceCount > 0);
+
+			mCtx->mVkPhysicalDevice = physicalDevices[0];
+
+			VkPhysicalDevice discreteGPU = nullptr;
+			VkPhysicalDevice integratedGPU = nullptr;
+
+			for (u32 deviceId; deviceId < deviceCount; ++deviceId)
+			{
+				VkPhysicalDeviceProperties2 deviceProperties = {.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
+				vkGetPhysicalDeviceProperties2(physicalDevices[deviceId], &deviceProperties);
+
+				switch (deviceProperties.properties.deviceType)
+				{
+				case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
+					discreteGPU = physicalDevices[deviceId];
+					break;
+				case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
+					integratedGPU = physicalDevices[deviceId];
+					break;
+				default:
+					break;
+				}
+			}
+
+			if (discreteGPU)
+			{
+				mCtx->mVkPhysicalDevice = discreteGPU;
+			}
+			else if (integratedGPU)
+			{
+				mCtx->mVkPhysicalDevice = integratedGPU;
+			}
+
+			VkPhysicalDeviceProperties2 deviceProperties = {.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
+			vkGetPhysicalDeviceProperties2(mCtx->mVkPhysicalDevice, &deviceProperties);
+
+			TURBO_LOG(Log, "Selected device: %s", deviceProperties.properties.deviceName);
 		}
 	}
 
-	void GPUDevice::Shutdown(Engine* engine) {}
+	void GPUDevice::Shutdown(Engine* engine)
+	{
+		vkDestroyInstance(mCtx->mVkInstance, nullptr);
+	}
 }
