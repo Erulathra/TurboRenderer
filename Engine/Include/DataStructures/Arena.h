@@ -53,6 +53,20 @@ namespace Turbo
 			return result;
 		}
 
+		char* AllocateString(u64 size)
+		{
+			check(mAllocation != nullptr && mTop != nullptr && mTip != nullptr);
+			check(size > 0);
+
+			void* result = mTop;
+			void* newTop = (u8*)result + size;
+			check(newTop <= mTip);
+
+			mTop = newTop;
+
+			return (char*)result;
+		}
+
 		void Clear() { mTop = mAllocation; }
 	};
 } // namespace Turbo
