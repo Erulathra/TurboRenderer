@@ -38,17 +38,20 @@ namespace Turbo
 	{
 		// TODO(SS): add type flags to message after implementing string library.
 
+		MakeStaticArena(stringArena, 1024);
+		StringView typeString = FlagsToString(stringArena, type);
+
 		switch (severity)
 		{
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
 			break;
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-			TURBO_LOG(Warning, "[Vulkan Validation] %s", callbackData->pMessage);
+			TURBO_LOG(Warning, "[Vulkan Validation][" SV_FMT "] %s", SV_ARG(typeString), callbackData->pMessage);
 			DEBUG_BREAK();
 			break;
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-			TURBO_LOG(Error, "[Vulkan Validation] %s", callbackData->pMessage);
+			TURBO_LOG(Error, "[Vulkan Validation][" SV_FMT "] %s", SV_ARG(typeString), callbackData->pMessage);
 			DEBUG_BREAK();
 			break;
 		invalidDefaultCase

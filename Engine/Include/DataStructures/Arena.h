@@ -1,5 +1,7 @@
 #pragma once
 
+#define MakeStaticArena(NAME, SIZE) Arena NAME; u8 _##NAME##Data[(SIZE)]; NAME.Init(_##NAME##Data, (SIZE))
+
 namespace Turbo
 {
 	struct Arena
@@ -70,5 +72,3 @@ namespace Turbo
 		void Clear() { mTop = mAllocation; }
 	};
 } // namespace Turbo
-
-#define AllocateStaticArena(NAME, SIZE) Arena NAME; u8 _##NAME##Data[(SIZE)]; NAME.Init(_##NAME##Data, (SIZE))
