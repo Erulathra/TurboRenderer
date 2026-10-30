@@ -23,6 +23,10 @@ namespace Turbo
 	{
 		VkInstance mVkInstance = nullptr;
 		VkPhysicalDevice mVkPhysicalDevice = nullptr;
+		VkDevice mVkDevice = nullptr;
+
+		u32 mGraphicsQueueFamily = 0;
+		VkQueue mGraphicsQueue = nullptr;
 
 #if WITH_DEBUG_RENDERING_FEATURES
 		VkDebugUtilsMessengerEXT mVkDebugUtilsMessenger = nullptr;
@@ -107,6 +111,7 @@ namespace Turbo
 
 			vkCheck(vkCreateInstance(&instanceCI, nullptr, &mCtx->mVkInstance));
 			volkLoadInstance(mCtx->mVkInstance);
+			TURBO_LOG(Log, "Vulkan instance created.");
 
 #if WITH_DEBUG_RENDERING_FEATURES
 			/* Initialize debug messenger */
@@ -128,6 +133,8 @@ namespace Turbo
 				nullptr,
 				&mCtx->mVkDebugUtilsMessenger
 			));
+
+			TURBO_LOG(Log, "Debug messenger created.");
 #endif // WITH_DEBUG_RENDERING_FEATURES
 		}
 
@@ -175,10 +182,84 @@ namespace Turbo
 
 			TURBO_LOG(Log, "Selected device: %s", deviceProperties.properties.deviceName);
 		}
+
+		/* Select queue family */
+		{
+			u32 numQueueFamilies = 16;
+			VkQueueFamilyProperties queueFamilyProperties[numQueueFamilies];
+			vkGetPhysicalDeviceQueueFamilyProperties(mCtx->mVkPhysicalDevice, &numQueueFamilies, queueFamilyProperties);
+
+			bool bQueueFamilyFound = false;
+
+			for (u32 i = 0; i < numQueueFamilies; ++i)
+			{
+				const VkQueueFamilyProperties& queueFamilyProps = queueFamilyProperties[i];
+				if (queueFamilyProps.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+				{
+					mCtx->mGraphicsQueueFamily = i;
+					bQueueFamilyFound = true;
+					break;
+				}
+			}
+			verify(bQueueFamilyFound);
+			verify(GetPhysicalDevicePresentationSupport(mCtx->mVkInstance, mCtx->mVkPhysicalDevice, mCtx->mGraphicsQueueFamily));
+		}
+
+		/* Create device */
+		{
+			LiteralString deviceExtensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+
+			const float queuePriorities[] = {1.f};
+			const VkDeviceQueueCreateInfo queueCI = {
+				.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+				.queueFamilyIndex = mCtx->mGraphicsQueueFamily,
+				.queueCount = arrayLen(queuePriorities),
+				.pQueuePriorities = queuePriorities,
+			};
+
+			VkPhysicalDeviceFeatures vk10Features = {
+				.samplerAnisotropy = true
+			};
+
+			VkPhysicalDeviceVulkan12Features vk12Features = {
+				.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
+				.descriptorIndexing = true,
+				.shaderSampledImageArrayNonUniformIndexing = true,
+				.descriptorBindingVariableDescriptorCount = true,
+				.runtimeDescriptorArray = true,
+				.bufferDeviceAddress = true,
+			};
+
+			VkPhysicalDeviceVulkan13Features vk13Features = {
+				.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES,
+				.pNext = &vk12Features,
+				.synchronization2 = true,
+				.dynamicRendering = true,
+			};
+
+			const VkDeviceCreateInfo deviceCI = {
+				.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+				.pNext = &vk13Features,
+				.queueCreateInfoCount = 1,
+				.pQueueCreateInfos = &queueCI,
+				.enabledExtensionCount = arrayLen(deviceExtensions),
+				.ppEnabledExtensionNames = deviceExtensions,
+				.pEnabledFeatures = &vk10Features
+			};
+
+			vkCheck(vkCreateDevice(mCtx->mVkPhysicalDevice, &deviceCI, nullptr, &mCtx->mVkDevice));
+			volkLoadDevice(mCtx->mVkDevice);
+
+			vkGetDeviceQueue(mCtx->mVkDevice, mCtx->mGraphicsQueueFamily, 0, &mCtx->mGraphicsQueue);
+
+			TURBO_LOG(Log, "Vulkan logical device created.");
+		}
 	}
 
 	void GPUDevice::Shutdown(Engine* engine)
 	{
+		vkDestroyDevice(mCtx->mVkDevice, nullptr);
+
 #if WITH_DEBUG_RENDERING_FEATURES
 		vkDestroyDebugUtilsMessengerEXT(mCtx->mVkInstance, mCtx->mVkDebugUtilsMessenger, nullptr);
 #endif // WITH_DEBUG_RENDERING_FEATURES

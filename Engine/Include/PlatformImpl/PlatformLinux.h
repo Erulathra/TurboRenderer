@@ -23,17 +23,24 @@ namespace Turbo
 	FORCEINLINE void Memcpy(void* dst, const void* src, u64 numBytes) { memcpy(dst, src, numBytes); }
 
 	// ##################################################################################
-	//                                 Bit Intrinsics
+	//                                   Bit Intrinsics
 	// ##################################################################################
 
 	FORCEINLINE u32 CountTrailingZeros(u32 value) { return __builtin_ctz(value); }
 	FORCEINLINE u32 CountLeadingZeros(u32 value) { return __builtin_clz(value); }
 	FORCEINLINE u32 CountTrailingOnes(u32 value) { return __builtin_ctz(~value); }
 	FORCEINLINE u32 CountLeadingOnes(u32 value) { return __builtin_clz(~value); }
+} // namespace Turbo
 
+struct VkInstance_T;
+struct VkPhysicalDevice_T;
+
+namespace Turbo
+{
 	// ##################################################################################
-	//                                     Windowing
+	//                                       Vulkan
 	// ##################################################################################
 
 	const char** GetRequiredVulkanWindowExtensions(u32& extensionsCount);
+	bool GetPhysicalDevicePresentationSupport(VkInstance_T* vkInstance, VkPhysicalDevice_T* vkPhysicalDevice, u32 queueFamilyIndex);
 } // namespace Turbo

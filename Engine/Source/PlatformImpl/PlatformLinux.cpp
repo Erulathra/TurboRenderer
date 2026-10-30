@@ -80,4 +80,10 @@ namespace Turbo
 	{
 		return glfwGetRequiredInstanceExtensions(&extensionsCount);
 	}
+
+	bool GetPhysicalDevicePresentationSupport(VkInstance_T* vkInstance, VkPhysicalDevice_T* vkPhysicalDevice, u32 queueFamilyIndex)
+	{
+		return glfwGetPhysicalDevicePresentationSupport(vkInstance, vkPhysicalDevice, queueFamilyIndex);
+	}
+
 } // namespace Turbo
