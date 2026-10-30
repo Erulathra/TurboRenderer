@@ -17,3 +17,4 @@ target_precompile_headers(${ENGINE_TARGET_NAME} PUBLIC pch.h)
 
 target_link_libraries(${ENGINE_TARGET_NAME} PRIVATE glfw)
 target_link_libraries(${ENGINE_TARGET_NAME} PRIVATE volk_headers)
+target_link_libraries(${ENGINE_TARGET_NAME} PRIVATE VulkanMemoryAllocator)

@@ -14,7 +14,7 @@
    },
 
    {
-      "label": "Build Development",
+      "label": "Build [Development]",
       "command": "cmake",
       "cwd": "$ZED_WORKTREE_ROOT",
       "args": [

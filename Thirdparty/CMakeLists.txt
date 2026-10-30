@@ -15,8 +15,17 @@ CPMAddPackage(
   GIT_TAG vulkan-sdk-1.4.363.0
 )
 
+CPMAddPackage(
+  NAME VulkanMemoryAllocator
+  GITHUB_REPOSITORY GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
+  GIT_TAG v3.5.0
+  OPTIONS "VMA_BUILD_SAMPLES OFF"
+          "VMA_BUILD_DOCUMENTATION OFF"
+)
+
 set_target_properties(
 	glfw
 	volk
+	VulkanMemoryAllocator
 	PROPERTIES FOLDER "thirdparty"
 )
