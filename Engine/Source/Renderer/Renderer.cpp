@@ -2,7 +2,17 @@
 
 #include "VulkanHelpers.h"
 #include "DataStructures/Stack.h"
+
+#define VOLK_IMPLEMENTATION
 #include "volk.h"
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wnullability-completeness"
+#define VMA_IMPLEMENTATION
+#define VMA_STATIC_VULKAN_FUNCTIONS 0
+#define VMA_DYNAMIC_VULKAN_FUNCTIONS 0
+#include "vk_mem_alloc.h"
+#pragma clang diagnostic pop
 
 #include "Engine.h"
 
@@ -27,6 +37,8 @@ namespace Turbo
 
 		u32 mGraphicsQueueFamily = 0;
 		VkQueue mGraphicsQueue = nullptr;
+
+		VmaAllocator mVmaAllocator = {};
 
 #if WITH_DEBUG_RENDERING_FEATURES
 		VkDebugUtilsMessengerEXT mVkDebugUtilsMessenger = nullptr;
@@ -254,10 +266,30 @@ namespace Turbo
 
 			TURBO_LOG(Log, "Vulkan logical device created.");
 		}
+
+		/* Init VMA */
+		{
+			VmaAllocatorCreateInfo createInfo = {
+				.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
+				.physicalDevice = mCtx->mVkPhysicalDevice,
+				.device = mCtx->mVkDevice,
+				.instance = mCtx->mVkInstance,
+				.vulkanApiVersion = VK_API_VERSION_1_3,
+			};
+
+			VmaVulkanFunctions vmaVulkanFunctions = {};
+			vmaImportVulkanFunctionsFromVolk(&createInfo, &vmaVulkanFunctions);
+			createInfo.pVulkanFunctions = &vmaVulkanFunctions;
+
+			vkCheck(vmaCreateAllocator(&createInfo, &mCtx->mVmaAllocator));
+			TURBO_LOG(Log, "VMA Allocator created.");
+		}
 	}
 
 	void GPUDevice::Shutdown(Engine* engine)
 	{
+		vmaDestroyAllocator(mCtx->mVmaAllocator);
+
 		vkDestroyDevice(mCtx->mVkDevice, nullptr);
 
 #if WITH_DEBUG_RENDERING_FEATURES

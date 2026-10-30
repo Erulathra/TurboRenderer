@@ -2,7 +2,6 @@
 
 #include <signal.h>
 
-#define VOLK_IMPLEMENTATION
 #include "volk.h"
 #include "GLFW/glfw3.h"
 
