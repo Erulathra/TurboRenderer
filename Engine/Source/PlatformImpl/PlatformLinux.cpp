@@ -12,8 +12,9 @@
 
 namespace Turbo
 {
-	struct LinuxPlatformCtx final : Platform::Context
+	struct LinuxPlatformCtx final : public PlatformContext
 	{
+		GLFWwindow* glfwWindow = nullptr;
 	};
 
 	void* AllocateProgramMemory(u64 size)
@@ -69,67 +70,89 @@ namespace Turbo
 		return 0;
 	}
 
-	namespace Platform
+	static TStaticStack<i32, 128> gSignalsStack;
+
+	void SignalsHandler(i32 signalId)
 	{
-		TStaticStack<i32, 128> gSignalsStack;
+		// TODO(SS): Make it thread safe
+		gSignalsStack.Push(signalId);
+	}
 
-		void SignalsHandler(i32 signalId)
+	PlatformContext* PlatformInit(Arena& arena)
+	{
+		TURBO_LOG(Log, "Initializing Linux Platform.");
+
+		/* Init VOLK */
+		TURBO_LOG(Log, "Initializing Volk");
+		const VkResult volkInitResult = volkInitialize();
+		verifyf(volkInitResult == VK_SUCCESS, "Volk initialization Error: %i", volkInitResult);
+
+		/* Init GLFW */
+		TURBO_LOG(Log, "Initializing GLFW");
+		const i32 glfwInitResult = glfwInit();
+		verifyf(glfwInitResult == GLFW_TRUE, "GLFW Init Error: %i", glfwInitResult);
+		verifyf(glfwVulkanSupported() == GLFW_TRUE, "Vulkan not supported.");
+
+		/* Register signals handlers */
+		signal(SIGINT, SignalsHandler);
+
+		/* Create context */
+		LinuxPlatformCtx* ctx = arena.Allocate<LinuxPlatformCtx>();
+
+		/* Create window */
+		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+		ctx->glfwWindow = glfwCreateWindow(1280, 720, "TurboEngine", nullptr, nullptr);
+		verify(ctx->glfwWindow != nullptr);
+
+		return ctx;
+	};
+
+	void PlatformShutdown(PlatformContext& ctx)
+	{
+		TURBO_LOG(Log, "Linux Platform Shutdown.");
+		LinuxPlatformCtx& linuxCtx = (LinuxPlatformCtx&)ctx;
+
+		/* Destroy window */
+		glfwDestroyWindow(linuxCtx.glfwWindow);
+
+		/* GLFW teardown */
+		glfwTerminate();
+	}
+
+	void PlatformTick(PlatformContext& ctx, Engine& engine)
+	{
+		// TODO(SS): Make it thread safe.
+		// TODO(SS): Handle window events.
+
+		/* Handle signals fired last frame */
+		for (i32 signal : gSignalsStack)
 		{
-			// TODO(SS): Make it thread safe
-			gSignalsStack.Push(signalId);
-		}
-
-		Context* Init(Arena& arena)
-		{
-			TURBO_LOG(Log, "Initializing Linux Platform.");
-
-			/* Init VOLK */
-			TURBO_LOG(Log, "Initializing Volk");
-			const VkResult volkInitResult = volkInitialize();
-			verifyf(volkInitResult == VK_SUCCESS, "Volk initialization Error: %i", volkInitResult);
-
-			/* Init GLFW */
-			TURBO_LOG(Log, "Initializing GLFW");
-			const i32 glfwInitResult = glfwInit();
-			verifyf(glfwInitResult == GLFW_TRUE, "GLFW Init Error: %i", glfwInitResult);
-			verifyf(glfwVulkanSupported() == GLFW_TRUE, "Vulkan not supported.");
-
-			/* Register signals handlers */
-			signal(SIGINT, SignalsHandler);
-
-			/* create context */
-			Context* ctx = arena.Allocate<LinuxPlatformCtx>();
-			return ctx;
-		};
-
-		void Shutdown(Context& ctx) { TURBO_LOG(Log, "Linux Platform Shutdown."); }
-
-		void TickPlatform(Context& ctx, Engine& engine)
-		{
-			// TODO(SS): Make it thread safe
-
-			/* Handle signals fired last frame */
-			for (i32 signal : gSignalsStack)
+			switch (signal)
 			{
-				switch (signal)
-				{
-				case SIGINT:
-					engine.PushEvent(EventType::Sigint, {});
-					break;
+			case SIGINT:
+				engine.PushEvent(EventType::Sigint, {});
+				break;
 
-				default:
-					break;
-				}
+			default:
+				break;
 			}
 		}
-	} // namespace Platform
+
+		gSignalsStack.Empty();
+	}
+
+	i32 GetVulkanSurface(PlatformContext* ctx, VkInstance vkInstance, VkSurfaceKHR& outVkSurface)
+	{
+		LinuxPlatformCtx* linuxCtx = (LinuxPlatformCtx*)ctx;
+		return glfwCreateWindowSurface(vkInstance, linuxCtx->glfwWindow, nullptr, &outVkSurface);
+	}
 
 	const char** GetRequiredVulkanWindowExtensions(u32& extensionsCount)
 	{
 		return glfwGetRequiredInstanceExtensions(&extensionsCount);
 	}
 
-	bool GetPhysicalDevicePresentationSupport(VkInstance_T* vkInstance, VkPhysicalDevice_T* vkPhysicalDevice, u32 queueFamilyIndex)
+	bool GetPhysicalDevicePresentationSupport(VkInstance vkInstance, VkPhysicalDevice vkPhysicalDevice, u32 queueFamilyIndex)
 	{
 		return glfwGetPhysicalDevicePresentationSupport(vkInstance, vkPhysicalDevice, queueFamilyIndex);
 	}

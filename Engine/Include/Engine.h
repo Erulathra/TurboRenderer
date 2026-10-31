@@ -21,7 +21,7 @@ namespace Turbo
 		Arena mPersistentMemory = {};
 		Arena mTransientMemory = {};
 
-		Platform::Context* mPlatformContext = nullptr;
+		PlatformContext* mPlatformContext = nullptr;
 		GPUDevice* mGpu = nullptr;
 
 		bool bShouldTick = false;

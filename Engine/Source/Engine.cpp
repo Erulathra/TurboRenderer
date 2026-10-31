@@ -15,7 +15,7 @@ namespace Turbo
 		mPersistentMemory.Init(permanent, permanentSize);
 		mTransientMemory.Init(transient, transientSize);
 
-		mPlatformContext = Platform::Init(mPersistentMemory);
+		mPlatformContext = PlatformInit(mPersistentMemory);
 		check(mPlatformContext);
 
 		mGpu = GPUDevice::Create(this);
@@ -30,12 +30,12 @@ namespace Turbo
 
 		mGpu->Shutdown(this);
 
-		Platform::Shutdown(*mPlatformContext);
+		PlatformShutdown(*mPlatformContext);
 	}
 
 	bool Engine::Tick()
 	{
-		Platform::TickPlatform(*mPlatformContext, *this);
+		PlatformTick(*mPlatformContext, *this);
 		return bShouldTick;
 	}
 

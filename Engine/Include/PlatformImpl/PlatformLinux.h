@@ -31,30 +31,4 @@ namespace Turbo
 	FORCEINLINE u32 CountTrailingOnes(u32 value) { return __builtin_ctz(~value); }
 	FORCEINLINE u32 CountLeadingOnes(u32 value) { return __builtin_clz(~value); }
 
-	// ##################################################################################
-	//                                        Time
-	// ##################################################################################
-
-	/* Returns time in nanoseconds */
-	u64 GetRealTimeClockPrecision();
-	/* Returns time in nanoseconds */
-	u64 GetRelativeClockPrecision();
-	/* Returns time in nanoseconds */
-	u64 GetRealTime();
-	/* Returns time in nanoseconds */
-	u64 GetRelativeTime();
-
-} // namespace Turbo
-
-struct VkInstance_T;
-struct VkPhysicalDevice_T;
-
-namespace Turbo
-{
-	// ##################################################################################
-	//                                       Vulkan
-	// ##################################################################################
-
-	const char** GetRequiredVulkanWindowExtensions(u32& extensionsCount);
-	bool GetPhysicalDevicePresentationSupport(VkInstance_T* vkInstance, VkPhysicalDevice_T* vkPhysicalDevice, u32 queueFamilyIndex);
 } // namespace Turbo

@@ -23,16 +23,22 @@ namespace Turbo
 	struct Arena;
 	struct Engine;
 
-	namespace Platform
-	{
-		// NOTE(SS): Used for type safety, not to make this struct abstract.
-		struct Context { };
+	struct VkInstance_T;
+	struct VkPhysicalDevice_T;
+	struct VkSurfaceKHR_T;
 
-		/* Returns pointer to allocated context */
-		Context* Init(Arena& arena);
-		void Shutdown(Context& ctx);
-		void TickPlatform(Context& ctx, Engine& engine);
-	}
+	// NOTE(SS): Used for type safety, not to make this struct abstract.
+	struct PlatformContext { };
+
+	/* Returns pointer to allocated context */
+	PlatformContext* PlatformInit(Arena& arena);
+	void PlatformShutdown(PlatformContext& ctx);
+	void PlatformTick(PlatformContext& ctx, Engine& engine);
+
+	/* Vulkan */
+	const char** GetRequiredVulkanWindowExtensions(u32& extensionsCount);
+	bool GetPhysicalDevicePresentationSupport(VkInstance_T* vkInstance, VkPhysicalDevice_T* vkPhysicalDevice, u32 queueFamilyIndex);
+	i32 GetVulkanSurface(PlatformContext* ctx, VkInstance_T* vkInstance, VkSurfaceKHR_T*& outVkSurface);
 
 	// ##################################################################################
 	//                                   Common memory
@@ -53,4 +59,17 @@ namespace Turbo
 	{
 		return (T)(((iPtr)value + 15) & ~15);
 	}
+
+	// ##################################################################################
+	//                                        Time
+	// ##################################################################################
+
+	/* Returns time in nanoseconds */
+	u64 GetRealTimeClockPrecision();
+	/* Returns time in nanoseconds */
+	u64 GetRelativeClockPrecision();
+	/* Returns time in nanoseconds */
+	u64 GetRealTime();
+	/* Returns time in nanoseconds */
+	u64 GetRelativeTime();
 } // namespace Turbo
