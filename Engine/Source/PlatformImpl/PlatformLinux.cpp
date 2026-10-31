@@ -1,5 +1,6 @@
 #include "Platform.h"
 
+#include <time.h>
 #include <signal.h>
 
 #include "volk.h"
@@ -18,6 +19,54 @@ namespace Turbo
 	void* AllocateProgramMemory(u64 size)
 	{
 		return mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	}
+
+	u64 GetRealTimeClockPrecision()
+	{
+		timespec ts;
+		if (clock_getres(CLOCK_REALTIME, &ts) == 0)
+		{
+			return ts.tv_sec * (u64)TE_INV_NANO + ts.tv_nsec;
+		}
+
+		checkNoEntry();
+		return 0;
+	}
+
+	u64 GetRelativeClockPrecision()
+	{
+		timespec ts;
+		if (clock_getres(CLOCK_MONOTONIC, &ts) == 0)
+		{
+			return ts.tv_sec * (u64)TE_INV_NANO + ts.tv_nsec;
+		}
+
+		checkNoEntry();
+		return 0;
+	}
+
+	u64 GetRealTime()
+	{
+		timespec ts;
+		if (clock_gettime(CLOCK_REALTIME, &ts) == 0)
+		{
+			return ts.tv_sec * (u64)TE_INV_NANO + ts.tv_nsec;
+		}
+
+		checkNoEntry();
+		return 0;
+	}
+
+	u64 GetRelativeTime()
+	{
+		timespec ts;
+		if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0)
+		{
+			return ts.tv_sec * (u64)TE_INV_NANO + ts.tv_nsec;
+		}
+
+		checkNoEntry();
+		return 0;
 	}
 
 	namespace Platform

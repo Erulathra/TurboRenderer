@@ -2,15 +2,6 @@
 
 #include <math.h>
 
-#define SMALL_NUMBER 1e-4
-#define VERY_SMALL_NUMBER 1e-8
-
-#define TE_PI (3.14159265358979323846264)
-#define TE_TAU (6.28318530717958647692528)
-
-#define TE_DEG_TO_RAD (0.01745329251994329576923)
-#define TE_RAD_TO_DEG (57.2957795130823208767981)
-
 namespace Turbo
 {
 	// ##################################################################################

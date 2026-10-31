@@ -30,6 +30,20 @@ namespace Turbo
 	FORCEINLINE u32 CountLeadingZeros(u32 value) { return __builtin_clz(value); }
 	FORCEINLINE u32 CountTrailingOnes(u32 value) { return __builtin_ctz(~value); }
 	FORCEINLINE u32 CountLeadingOnes(u32 value) { return __builtin_clz(~value); }
+
+	// ##################################################################################
+	//                                      Time
+	// ##################################################################################
+
+	/* Returns time in nanoseconds */
+	u64 GetRealTimeClockPrecision();
+	/* Returns time in nanoseconds */
+	u64 GetRelativeClockPrecision();
+	/* Returns time in nanoseconds */
+	u64 GetRealTime();
+	/* Returns time in nanoseconds */
+	u64 GetRelativeTime();
+
 } // namespace Turbo
 
 struct VkInstance_T;

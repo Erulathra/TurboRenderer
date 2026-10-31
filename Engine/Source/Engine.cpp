@@ -11,6 +11,7 @@ namespace Turbo
 	{
 		TURBO_LOG(Log, "Welcome to Turbo::Engine!");
 		TURBO_LOG(Log, "Initializing memory. [P: %luMiB, T: %luMiB]", permanentSize / kMebi, transientSize / kMebi);
+		TURBO_LOG(Log, "Initializing clocks. [RT: %luns, M: %luns]", GetRealTimeClockPrecision(), GetRelativeClockPrecision());
 		mPersistentMemory.Init(permanent, permanentSize);
 		mTransientMemory.Init(transient, transientSize);
 

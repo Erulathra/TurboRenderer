@@ -53,5 +53,4 @@ namespace Turbo
 	{
 		return (T)(((iPtr)value + 15) & ~15);
 	}
-
 } // namespace Turbo
