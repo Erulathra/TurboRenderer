@@ -29,6 +29,7 @@
 
 namespace Turbo
 {
+	/* Data structures */
 	struct PlatformRenderContext
 	{
 		VkInstance mVkInstance = nullptr;
@@ -47,6 +48,7 @@ namespace Turbo
 #endif // WITH_DEBUG_RENDERING_FEATURES
 	};
 
+	/* Functions and methods */
 	VkBool32 DebugUtilsMessengerCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT severity,
 		VkDebugUtilsMessageTypeFlagsEXT type,
@@ -299,6 +301,10 @@ namespace Turbo
 
 	void GPUDevice::Shutdown(Engine* engine)
 	{
+		WaitGPUIdle();
+
+		DestroySwapchain();
+
 		vmaDestroyAllocator(mCtx->mVmaAllocator);
 
 		vkDestroyDevice(mCtx->mVkDevice, nullptr);
@@ -310,14 +316,16 @@ namespace Turbo
 		vkDestroyInstance(mCtx->mVkInstance, nullptr);
 	}
 
+	void GPUDevice::WaitGPUIdle() { vkCheck(vkDeviceWaitIdle(mCtx->mVkDevice)); }
+
 	void GPUDevice::CreateSwapchain(PlatformContext* platformCtx)
 	{
-		// TODO(SS): Finish this method later
-		#if 0
 		VkSurfaceCapabilitiesKHR vkSurfaceCapabilities;
-		vkCheck(
-			vkGetPhysicalDeviceSurfaceCapabilitiesKHR(mCtx->mVkPhysicalDevice, mCtx->mVkSurface, &vkSurfaceCapabilities)
-		);
+		vkCheck(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+			mCtx->mVkPhysicalDevice,
+			mCtx->mVkSurface,
+			&vkSurfaceCapabilities
+		));
 
 		/* Handle Wayland shenanigans */
 		VkExtent2D swapchainExtent = vkSurfaceCapabilities.currentExtent;
@@ -326,6 +334,12 @@ namespace Turbo
 			swapchainExtent = ToVkExtent2D(GetFrameBufferSize(platformCtx));
 		}
 		TURBO_LOG(Log, "New Swapchain resolution: %ux%u", swapchainExtent.width, swapchainExtent.height);
-		#endif
+
+
+	}
+
+	void GPUDevice::DestroySwapchain()
+	{
+		vkDestroySurfaceKHR(mCtx->mVkInstance, mCtx->mVkSurface, nullptr);
 	}
 } // namespace Turbo

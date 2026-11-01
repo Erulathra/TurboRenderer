@@ -72,12 +72,14 @@ namespace Turbo
 		return 0;
 	}
 
-	static TStaticStack<i32, 128> gSignalsStack;
+	static i32 gSignalsStack[128];
+	static sig_atomic_t gSignalsStackTop = 0;
 
 	void SignalsHandler(i32 signalId)
 	{
-		// TODO(SS): Make it thread safe
-		gSignalsStack.Push(signalId);
+		check(gSignalsStackTop + 1 < arrayLen(gSignalsStack));
+		gSignalsStack[gSignalsStackTop] = signalId;
+		gSignalsStackTop += 1;
 	}
 
 	PlatformContext* PlatformInit(Arena& arena)
@@ -123,12 +125,14 @@ namespace Turbo
 
 	void PlatformTick(PlatformContext* ctx, Engine* engine)
 	{
-		// TODO(SS): Make it thread safe.
 		// TODO(SS): Handle window events.
 
 		/* Handle signals fired last frame */
-		for (i32 signal : gSignalsStack)
+		while (gSignalsStackTop > 0)
 		{
+			--gSignalsStackTop;
+			const i32 signal = gSignalsStack[gSignalsStackTop];
+
 			switch (signal)
 			{
 			case SIGINT:
@@ -139,8 +143,6 @@ namespace Turbo
 				break;
 			}
 		}
-
-		gSignalsStack.Empty();
 	}
 
 	IVec2 GetFrameBufferSize(PlatformContext* ctx)

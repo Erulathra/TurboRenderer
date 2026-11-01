@@ -15,7 +15,11 @@ namespace Turbo
 		void Init(Engine* engine);
 		void Shutdown(Engine* engine);
 
+		/* Common API */
+		void WaitGPUIdle();
+
 		/* Swapchain */
 		void CreateSwapchain(PlatformContext* platformCtx);
+		void DestroySwapchain();
 	};
 } // namespace Turbo
