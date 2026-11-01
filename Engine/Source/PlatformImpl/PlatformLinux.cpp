@@ -7,7 +7,6 @@
 #include "GLFW/glfw3.h"
 
 #include "DataStructures/Arena.h"
-#include "DataStructures/Stack.h"
 #include "Engine.h"
 
 #define ToLinuxCtx(CTX) static_cast<LinuxPlatformCtx*>((CTX))
@@ -16,7 +15,7 @@ namespace Turbo
 {
 	struct LinuxPlatformCtx final : public PlatformContext
 	{
-		GLFWwindow* glfwWindow = nullptr;
+		GLFWwindow* mGlfwWindow = nullptr;
 	};
 
 	void* AllocateProgramMemory(u64 size)
@@ -106,8 +105,8 @@ namespace Turbo
 
 		/* Create window */
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-		ctx->glfwWindow = glfwCreateWindow(1280, 720, "TurboEngine", nullptr, nullptr);
-		verify(ctx->glfwWindow != nullptr);
+		ctx->mGlfwWindow = glfwCreateWindow(1280, 720, "TurboEngine", nullptr, nullptr);
+		verify(ctx->mGlfwWindow != nullptr);
 
 		return ctx;
 	};
@@ -118,7 +117,7 @@ namespace Turbo
 		LinuxPlatformCtx* linuxCtx = ToLinuxCtx(ctx);
 
 		/* Destroy window */
-		glfwDestroyWindow(linuxCtx->glfwWindow);
+		glfwDestroyWindow(linuxCtx->mGlfwWindow);
 
 		/* GLFW teardown */
 		glfwTerminate();
@@ -151,7 +150,7 @@ namespace Turbo
 		LinuxPlatformCtx* linuxCtx = ToLinuxCtx(ctx);
 
 		IVec2 result = {};
-		glfwGetFramebufferSize(linuxCtx->glfwWindow, &result.x, &result.y);
+		glfwGetFramebufferSize(linuxCtx->mGlfwWindow, &result.x, &result.y);
 
 		return result;
 	}
@@ -159,7 +158,7 @@ namespace Turbo
 	i32 GetVulkanSurface(PlatformContext* ctx, VkInstance vkInstance, VkSurfaceKHR& outVkSurface)
 	{
 		LinuxPlatformCtx* linuxCtx = ToLinuxCtx(ctx);
-		return glfwCreateWindowSurface(vkInstance, linuxCtx->glfwWindow, nullptr, &outVkSurface);
+		return glfwCreateWindowSurface(vkInstance, linuxCtx->mGlfwWindow, nullptr, &outVkSurface);
 	}
 
 	const char** GetRequiredVulkanWindowExtensions(u32& extensionsCount)

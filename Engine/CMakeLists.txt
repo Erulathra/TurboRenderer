@@ -3,6 +3,7 @@ set(ENGINE_TARGET_NAME TurboEngine)
 set(SOURCE_FILES
 	Source/Engine.cpp
 	Source/Logging.cpp
+	Source/String.cpp
 
 	Source/Renderer/Renderer.cpp
 	Source/Renderer/VulkanHelpers.cpp

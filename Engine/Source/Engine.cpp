@@ -22,7 +22,7 @@ namespace Turbo
 		mGpu->Init(this);
 		mGpu->CreateSwapchain(mPlatformContext);
 
-		bShouldTick = true;
+		mbShouldTick = true;
 	}
 
 	void Engine::Shutdown()
@@ -37,7 +37,8 @@ namespace Turbo
 	bool Engine::Tick()
 	{
 		PlatformTick(mPlatformContext, this);
-		return bShouldTick;
+
+		return mbShouldTick;
 	}
 
 	void Engine::PushEvent(EventType type, const EventData& eventData)
@@ -52,7 +53,7 @@ namespace Turbo
 		{
 		case EventType::Sigint:
 			TURBO_LOG(Warning, "SIGINT signaled. Requesting shutdown.");
-			bShouldTick = false;
+			mbShouldTick = false;
 			break;
 		default:
 			break;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DataStructures/Arena.h"
+#include "DataStructures/Array.h"
 
 #define SV_FMT "%.*s"
 #define SV_ARG(sv) static_cast<i32>((sv).mSize), (sv).mStart
@@ -15,8 +16,25 @@ namespace Turbo
 		u64 mSize = 0;
 	};
 
+#if 0
+	struct Name
+	{
+		const char* mStringLookUp;
+		u64 mId = 0;
+
+		Name() = delete;
+		Name(CString cstr);
+
+		Name& operator=(CString cstr);
+	};
+#endif
+
 	namespace String
 	{
+		// ##################################################################################
+		//                                   String View
+		// ##################################################################################
+
 		inline StringView MakeStringView(CString string)
 		{
 			return {
@@ -53,6 +71,11 @@ namespace Turbo
 			check(dst.mSize >= numCharacters);
 			dst.mStart += numCharacters;
 			dst.mSize -= numCharacters;
+		}
+
+		inline ByteView ToByteView(const StringView& sv)
+		{
+			return {(u8*)sv.mStart, sv.mSize};
 		}
 	}
 } // namespace Turbo

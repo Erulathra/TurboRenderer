@@ -24,7 +24,7 @@ namespace Turbo
 		PlatformContext* mPlatformContext = nullptr;
 		GPUDevice* mGpu = nullptr;
 
-		bool bShouldTick = false;
+		bool mbShouldTick = false;
 
 		/* API */
 		void Init(void* permanent, u64 permanentSize, void* transient, u64 transientSize);

@@ -9,7 +9,7 @@ namespace Turbo
 		void* mAllocation = nullptr;
 		void* mTop = nullptr;
 		void* mTip = nullptr;
-		bool bInitialized = false;
+		bool mbInitialized = false;
 
 		void Init(void* data, u64 size)
 		{
@@ -19,7 +19,7 @@ namespace Turbo
 
     		mTip = (u8*)mAllocation + size;
     		mTop = (u8*)mAllocation;
-         bInitialized = true;
+         mbInitialized = true;
 		}
 
 		static Arena Create(void* data, u64 size)

@@ -2,6 +2,8 @@
 
 #include <math.h>
 
+#include "DataStructures/Array.h"
+
 namespace Turbo
 {
 	// ##################################################################################
@@ -108,4 +110,20 @@ namespace Turbo
 		check(x >= I64_MIN && x <= I64_MAX);
 		return (i64)(x);
 	}
-} // namespace Turbo::Math
+
+	// ##################################################################################
+	//                                   Hash functions
+	// ##################################################################################
+
+	inline u64 FNVHash(ByteView byteView)
+	{
+		// SOURCE: https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
+		u64 h = 0xcbf29ce484222325ul;
+		for (u8 byte : byteView)
+		{
+			h ^= byte;
+			h *= 16777619;
+		}
+		return h;
+	}
+} // namespace Turbo
