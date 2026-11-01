@@ -72,6 +72,7 @@ namespace Turbo
 		return 0;
 	}
 
+	// NOTE(SS): this is not thread safe. It only handles main thread signals interrupts.
 	static i32 gSignalsStack[128];
 	static sig_atomic_t gSignalsStackTop = 0;
 

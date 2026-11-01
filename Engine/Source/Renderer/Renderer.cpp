@@ -305,6 +305,8 @@ namespace Turbo
 
 		DestroySwapchain();
 
+		vkDestroySurfaceKHR(mCtx->mVkInstance, mCtx->mVkSurface, nullptr);
+
 		vmaDestroyAllocator(mCtx->mVmaAllocator);
 
 		vkDestroyDevice(mCtx->mVkDevice, nullptr);
@@ -340,6 +342,6 @@ namespace Turbo
 
 	void GPUDevice::DestroySwapchain()
 	{
-		vkDestroySurfaceKHR(mCtx->mVkInstance, mCtx->mVkSurface, nullptr);
+		// TODO(SS)
 	}
 } // namespace Turbo
