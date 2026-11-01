@@ -38,6 +38,8 @@ namespace Turbo
 		u32 mGraphicsQueueFamily = 0;
 		VkQueue mGraphicsQueue = nullptr;
 
+		VkSurfaceKHR mVkSurface = nullptr;
+
 		VmaAllocator mVmaAllocator = {};
 
 #if WITH_DEBUG_RENDERING_FEATURES
@@ -214,7 +216,11 @@ namespace Turbo
 				}
 			}
 			verify(bQueueFamilyFound);
-			verify(GetPhysicalDevicePresentationSupport(mCtx->mVkInstance, mCtx->mVkPhysicalDevice, mCtx->mGraphicsQueueFamily));
+			verify(GetPhysicalDevicePresentationSupport(
+				mCtx->mVkInstance,
+				mCtx->mVkPhysicalDevice,
+				mCtx->mGraphicsQueueFamily
+			));
 		}
 
 		/* Create device */
@@ -267,6 +273,11 @@ namespace Turbo
 			TURBO_LOG(Log, "Vulkan logical device created.");
 		}
 
+		/* Obtain Surface */
+		{
+			vkCheck((VkResult)GetVulkanSurface(engine->mPlatformContext, mCtx->mVkInstance, mCtx->mVkSurface));
+		}
+
 		/* Init VMA */
 		{
 			VmaAllocatorCreateInfo createInfo = {
@@ -298,4 +309,23 @@ namespace Turbo
 
 		vkDestroyInstance(mCtx->mVkInstance, nullptr);
 	}
-}
+
+	void GPUDevice::CreateSwapchain(PlatformContext* platformCtx)
+	{
+		// TODO(SS): Finish this method later
+		#if 0
+		VkSurfaceCapabilitiesKHR vkSurfaceCapabilities;
+		vkCheck(
+			vkGetPhysicalDeviceSurfaceCapabilitiesKHR(mCtx->mVkPhysicalDevice, mCtx->mVkSurface, &vkSurfaceCapabilities)
+		);
+
+		/* Handle Wayland shenanigans */
+		VkExtent2D swapchainExtent = vkSurfaceCapabilities.currentExtent;
+		if (swapchainExtent.width == U32_MAX)
+		{
+			swapchainExtent = ToVkExtent2D(GetFrameBufferSize(platformCtx));
+		}
+		TURBO_LOG(Log, "New Swapchain resolution: %ux%u", swapchainExtent.width, swapchainExtent.height);
+		#endif
+	}
+} // namespace Turbo

@@ -14,5 +14,8 @@ namespace Turbo
 		static GPUDevice* Create(Engine* engine);
 		void Init(Engine* engine);
 		void Shutdown(Engine* engine);
+
+		/* Swapchain */
+		void CreateSwapchain(PlatformContext* platformCtx);
 	};
 } // namespace Turbo

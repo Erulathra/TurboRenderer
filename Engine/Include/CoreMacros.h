@@ -27,3 +27,7 @@
 #define TE_INV_MILI  (1e3)
 #define TE_INV_MICRO (1e6)
 #define TE_INV_NANO  (1e9)
+
+#define TE_GIBI  (1ul << 30)
+#define TE_MEBI  (1ul << 20)
+#define TE_KIBI  (1ul << 10)

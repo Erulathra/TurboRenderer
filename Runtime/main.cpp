@@ -4,8 +4,8 @@
 
 i32 main(i32 argc, char* argv[])
 {
-	constexpr u64 kPermanentSize = 128 * Turbo::kMebi;
-	constexpr u64 kTransientSize = 2 * Turbo::kGibi;
+	constexpr u64 kPermanentSize = 128 * TE_MEBI;
+	constexpr u64 kTransientSize = 2 * TE_GIBI;
 
 	// NOTE(SS): We don't need to free this allocation. It would be freed by OS after program shutdown.
 	void* permanentMemory = Turbo::AllocateProgramMemory(kPermanentSize);

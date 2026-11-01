@@ -10,7 +10,7 @@ namespace Turbo
 	void Engine::Init(void* permanent, u64 permanentSize, void* transient, u64 transientSize)
 	{
 		TURBO_LOG(Log, "Welcome to Turbo::Engine!");
-		TURBO_LOG(Log, "Initializing memory. [P: %luMiB, T: %luMiB]", permanentSize / kMebi, transientSize / kMebi);
+		TURBO_LOG(Log, "Initializing memory. [P: %luMiB, T: %luMiB]", permanentSize / TE_MEBI, transientSize / TE_MEBI);
 		TURBO_LOG(Log, "Initializing clocks. [RT: %luns, M: %luns]", GetRealTimeClockPrecision(), GetRelativeClockPrecision());
 		mPersistentMemory.Init(permanent, permanentSize);
 		mTransientMemory.Init(transient, transientSize);
@@ -20,6 +20,7 @@ namespace Turbo
 
 		mGpu = GPUDevice::Create(this);
 		mGpu->Init(this);
+		mGpu->CreateSwapchain(mPlatformContext);
 
 		bShouldTick = true;
 	}
@@ -30,12 +31,12 @@ namespace Turbo
 
 		mGpu->Shutdown(this);
 
-		PlatformShutdown(*mPlatformContext);
+		PlatformShutdown(mPlatformContext);
 	}
 
 	bool Engine::Tick()
 	{
-		PlatformTick(*mPlatformContext, *this);
+		PlatformTick(mPlatformContext, this);
 		return bShouldTick;
 	}
 

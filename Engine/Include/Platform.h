@@ -1,18 +1,15 @@
 #pragma once
 
-/* Base typedefs */
-#ifndef TURBO_DEVELOPMENT
-#define TURBO_DEVELOPMENT 0
-#endif // TURBO_DEVELOPMENT
-
-#ifndef TURBO_SHIPPING
-#define TURBO_SHIPPING 0
-#endif // TURBO_SHIPPING
-
 /* Real platform implementation */
 #if PLATFORM_LINUX
 #include "PlatformImpl/PlatformLinux.h"
 #endif // PLATFORM_LINUX
+
+#include "Math/Vector.h"
+
+struct VkInstance_T;
+struct VkPhysicalDevice_T;
+struct VkSurfaceKHR_T;
 
 namespace Turbo
 {
@@ -23,17 +20,16 @@ namespace Turbo
 	struct Arena;
 	struct Engine;
 
-	struct VkInstance_T;
-	struct VkPhysicalDevice_T;
-	struct VkSurfaceKHR_T;
-
 	// NOTE(SS): Used for type safety, not to make this struct abstract.
 	struct PlatformContext { };
 
 	/* Returns pointer to allocated context */
 	PlatformContext* PlatformInit(Arena& arena);
-	void PlatformShutdown(PlatformContext& ctx);
-	void PlatformTick(PlatformContext& ctx, Engine& engine);
+	void PlatformShutdown(PlatformContext* ctx);
+	void PlatformTick(PlatformContext* ctx, Engine* engine);
+
+	/* Window */
+	IVec2 GetFrameBufferSize(PlatformContext* ctx);
 
 	/* Vulkan */
 	const char** GetRequiredVulkanWindowExtensions(u32& extensionsCount);
@@ -43,10 +39,6 @@ namespace Turbo
 	// ##################################################################################
 	//                                   Common memory
 	// ##################################################################################
-
-	constexpr u64 kGibi = 1 << 30;
-	constexpr u64 kMebi = 1 << 20;
-	constexpr u64 kKibi = 1 << 10;
 
 	template <typename T>
 	constexpr T Align4(T value)

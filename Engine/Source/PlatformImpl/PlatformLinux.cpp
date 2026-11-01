@@ -10,6 +10,8 @@
 #include "DataStructures/Stack.h"
 #include "Engine.h"
 
+#define ToLinuxCtx(CTX) static_cast<LinuxPlatformCtx*>((CTX))
+
 namespace Turbo
 {
 	struct LinuxPlatformCtx final : public PlatformContext
@@ -107,19 +109,19 @@ namespace Turbo
 		return ctx;
 	};
 
-	void PlatformShutdown(PlatformContext& ctx)
+	void PlatformShutdown(PlatformContext* ctx)
 	{
 		TURBO_LOG(Log, "Linux Platform Shutdown.");
-		LinuxPlatformCtx& linuxCtx = (LinuxPlatformCtx&)ctx;
+		LinuxPlatformCtx* linuxCtx = ToLinuxCtx(ctx);
 
 		/* Destroy window */
-		glfwDestroyWindow(linuxCtx.glfwWindow);
+		glfwDestroyWindow(linuxCtx->glfwWindow);
 
 		/* GLFW teardown */
 		glfwTerminate();
 	}
 
-	void PlatformTick(PlatformContext& ctx, Engine& engine)
+	void PlatformTick(PlatformContext* ctx, Engine* engine)
 	{
 		// TODO(SS): Make it thread safe.
 		// TODO(SS): Handle window events.
@@ -130,7 +132,7 @@ namespace Turbo
 			switch (signal)
 			{
 			case SIGINT:
-				engine.PushEvent(EventType::Sigint, {});
+				engine->PushEvent(EventType::Sigint, {});
 				break;
 
 			default:
@@ -141,9 +143,19 @@ namespace Turbo
 		gSignalsStack.Empty();
 	}
 
+	IVec2 GetFrameBufferSize(PlatformContext* ctx)
+	{
+		LinuxPlatformCtx* linuxCtx = ToLinuxCtx(ctx);
+
+		IVec2 result = {};
+		glfwGetFramebufferSize(linuxCtx->glfwWindow, &result.x, &result.y);
+
+		return result;
+	}
+
 	i32 GetVulkanSurface(PlatformContext* ctx, VkInstance vkInstance, VkSurfaceKHR& outVkSurface)
 	{
-		LinuxPlatformCtx* linuxCtx = (LinuxPlatformCtx*)ctx;
+		LinuxPlatformCtx* linuxCtx = ToLinuxCtx(ctx);
 		return glfwCreateWindowSurface(vkInstance, linuxCtx->glfwWindow, nullptr, &outVkSurface);
 	}
 
