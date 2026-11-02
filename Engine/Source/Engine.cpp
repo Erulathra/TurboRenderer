@@ -2,8 +2,7 @@
 
 #include "Renderer/Renderer.h"
 
-#include "Math/Quaternion.h"
-#include "Math/Vector.h"
+#include "String.h"
 
 namespace Turbo
 {
@@ -11,9 +10,18 @@ namespace Turbo
 	{
 		TURBO_LOG(Log, "Welcome to Turbo::Engine!");
 		TURBO_LOG(Log, "Initializing memory. [P: %luMiB, T: %luMiB]", permanentSize / TE_MEBI, transientSize / TE_MEBI);
-		TURBO_LOG(Log, "Initializing clocks. [RT: %luns, M: %luns]", GetRealTimeClockPrecision(), GetRelativeClockPrecision());
 		mPersistentMemory.Init(permanent, permanentSize);
 		mTransientMemory.Init(transient, transientSize);
+
+		TURBO_LOG(Log, "Initializing clocks. [RT: %luns, M: %luns]", GetRealTimeClockPrecision(), GetRelativeClockPrecision());
+		NameDB = String::InitNameDB(mPersistentMemory);
+
+		static Name TestName = {"TestName"};
+		static Name TestName2 = {"OtherTestName"};
+		static Name TestName_TheSame = {"TestName"};
+
+		check(TestName == TestName_TheSame);
+		check(TestName != TestName2);
 
 		mPlatformContext = PlatformInit(mPersistentMemory);
 		check(mPlatformContext);

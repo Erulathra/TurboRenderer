@@ -21,6 +21,7 @@ namespace Turbo
 		Arena mPersistentMemory = {};
 		Arena mTransientMemory = {};
 
+		void* NameDB = nullptr;
 		PlatformContext* mPlatformContext = nullptr;
 		GPUDevice* mGpu = nullptr;
 

@@ -16,7 +16,6 @@ namespace Turbo
 		u64 mSize = 0;
 	};
 
-#if 0
 	struct Name
 	{
 		const char* mStringLookUp;
@@ -25,12 +24,19 @@ namespace Turbo
 		Name() = delete;
 		Name(CString cstr);
 
-		Name& operator=(CString cstr);
+		bool operator==(const Name& rhs) const { return mId == rhs.mId; }
+		bool operator!=(const Name& rhs) const { return !(*this == rhs); }
 	};
-#endif
 
 	namespace String
 	{
+		// ##################################################################################
+		//                                      Names
+		// ##################################################################################
+
+		void* InitNameDB(Arena& arena);
+		void* InitNameDB(void* nameDB);
+
 		// ##################################################################################
 		//                                   String View
 		// ##################################################################################
@@ -60,6 +66,15 @@ namespace Turbo
 			dst.mSize += src.mSize;
 		}
 
+		inline void AppendChar(Arena& stringArena, StringView& dst, char character)
+		{
+			check(dst.mStart + dst.mSize == stringArena.mTop);
+			char* mTop = stringArena.AllocateString(1);
+
+			*mTop = character;
+			dst.mSize += 1;
+		}
+
 		inline void ChopRight(StringView& dst, u64 numCharacters)
 		{
 			check(dst.mSize >= numCharacters);
@@ -71,6 +86,19 @@ namespace Turbo
 			check(dst.mSize >= numCharacters);
 			dst.mStart += numCharacters;
 			dst.mSize -= numCharacters;
+		}
+
+		inline void TrimNul(StringView& dst)
+		{
+			if (dst.mSize > 0 && dst.mStart[dst.mSize - 1] == 0)
+			{
+				ChopRight(dst, 1);
+			}
+		}
+
+		inline bool Compare(const StringView& lhs, const StringView& rhs)
+		{
+			return lhs.mSize == rhs.mSize && (lhs.mSize == 0 || strncmp(lhs.mStart, rhs.mStart, lhs.mSize) == 0);
 		}
 
 		inline ByteView ToByteView(const StringView& sv)
