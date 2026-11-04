@@ -8,7 +8,7 @@ namespace Turbo
 	{
 		/* Data */
 		/* Platform specific context. Hidden under abstraction. */
-		void* mContext;
+		void* context;
 
 		/* Layer API */
 		static GPUDevice* Create(Engine* engine);

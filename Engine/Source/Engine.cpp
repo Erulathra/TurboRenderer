@@ -10,11 +10,11 @@ namespace Turbo
 	{
 		TURBO_LOG(Log, "Welcome to Turbo::Engine!");
 		TURBO_LOG(Log, "Initializing memory. [P: %luMiB, T: %luMiB]", permanentSize / TE_MEBI, transientSize / TE_MEBI);
-		mPersistentMemory.Init(permanent, permanentSize);
-		mTransientMemory.Init(transient, transientSize);
+		persistentMemory.Init(permanent, permanentSize);
+		transientMemory.Init(transient, transientSize);
 
 		TURBO_LOG(Log, "Initializing clocks. [RT: %luns, M: %luns]", GetRealTimeClockPrecision(), GetRelativeClockPrecision());
-		NameDB = String::InitNameDB(mPersistentMemory);
+		NameDB = String::InitNameDB(persistentMemory);
 
 		static Name TestName = {"TestName"};
 		static Name TestName2 = {"OtherTestName"};
@@ -23,30 +23,30 @@ namespace Turbo
 		check(TestName == TestName_TheSame);
 		check(TestName != TestName2);
 
-		mPlatformContext = PlatformInit(mPersistentMemory);
-		check(mPlatformContext);
+		platformContext = PlatformInit(persistentMemory);
+		check(platformContext);
 
-		mGpu = GPUDevice::Create(this);
-		mGpu->Init(this);
-		mGpu->CreateSwapchain(mPlatformContext);
+		gpu = GPUDevice::Create(this);
+		gpu->Init(this);
+		gpu->CreateSwapchain(platformContext);
 
-		mbShouldTick = true;
+		shouldTick = true;
 	}
 
 	void Engine::Shutdown()
 	{
 		TURBO_LOG(Log, "Shutting down Turbo::Engine.");
 
-		mGpu->Shutdown(this);
+		gpu->Shutdown(this);
 
-		PlatformShutdown(mPlatformContext);
+		PlatformShutdown(platformContext);
 	}
 
 	bool Engine::Tick()
 	{
-		PlatformTick(mPlatformContext, this);
+		PlatformTick(platformContext, this);
 
-		return mbShouldTick;
+		return shouldTick;
 	}
 
 	void Engine::PushEvent(EventType type, const EventData& eventData)
@@ -61,7 +61,7 @@ namespace Turbo
 		{
 		case EventType::Sigint:
 			TURBO_LOG(Warning, "SIGINT signaled. Requesting shutdown.");
-			mbShouldTick = false;
+			shouldTick = false;
 			break;
 		default:
 			break;

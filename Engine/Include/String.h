@@ -4,27 +4,27 @@
 #include "DataStructures/Array.h"
 
 #define SV_FMT "%.*s"
-#define SV_ARG(sv) static_cast<i32>((sv).mSize), (sv).mStart
+#define SV_ARG(sv) static_cast<i32>((sv).size), (sv).start
 #define stringLen(LiteralString) arrayLen(LiteralString)
-#define LiteralStringView(LiteralString) StringView{.mStart = (LiteralString), .mSize = stringLen(LiteralString) - 1}
+#define LiteralStringView(LiteralString) StringView{.start = (LiteralString), .size = stringLen(LiteralString) - 1}
 
 namespace Turbo
 {
 	struct StringView
 	{
-		const char* mStart = nullptr;
-		u64 mSize = 0;
+		const char* start = nullptr;
+		u64 size = 0;
 	};
 
 	struct Name
 	{
-		const char* mStringLookUp;
-		u64 mId = 0;
+		const char* stringLookUp;
+		u64 id = 0;
 
 		Name() = delete;
 		Name(CString cstr);
 
-		bool operator==(const Name& rhs) const { return mId == rhs.mId; }
+		bool operator==(const Name& rhs) const { return id == rhs.id; }
 		bool operator!=(const Name& rhs) const { return !(*this == rhs); }
 	};
 
@@ -44,53 +44,53 @@ namespace Turbo
 		inline StringView MakeStringView(CString string)
 		{
 			return {
-				.mStart = string,
-				.mSize = strlen(string),
+				.start = string,
+				.size = strlen(string),
 			};
 		}
 
 		inline StringView BeginString(Arena& stringArena)
 		{
 			return {
-				.mStart = (char*)stringArena.mTop,
-				.mSize = 0,
+				.start = (char*)stringArena.top,
+				.size = 0,
 			};
 		}
 
 		inline void AppendString(Arena& stringArena, StringView& dst, StringView src)
 		{
-			check(dst.mStart + dst.mSize == stringArena.mTop);
-			char* mTop = stringArena.AllocateString(src.mSize);
+			check(dst.start + dst.size == stringArena.top);
+			char* top = stringArena.AllocateString(src.size);
 
-			Memcpy(mTop, src.mStart, src.mSize);
-			dst.mSize += src.mSize;
+			Memcpy(top, src.start, src.size);
+			dst.size += src.size;
 		}
 
 		inline void AppendChar(Arena& stringArena, StringView& dst, char character)
 		{
-			check(dst.mStart + dst.mSize == stringArena.mTop);
-			char* mTop = stringArena.AllocateString(1);
+			check(dst.start + dst.size == stringArena.top);
+			char* top = stringArena.AllocateString(1);
 
-			*mTop = character;
-			dst.mSize += 1;
+			*top = character;
+			dst.size += 1;
 		}
 
 		inline void ChopRight(StringView& dst, u64 numCharacters)
 		{
-			check(dst.mSize >= numCharacters);
-			dst.mSize -= numCharacters;
+			check(dst.size >= numCharacters);
+			dst.size -= numCharacters;
 		}
 
 		inline void ChopLeft(StringView& dst, u64 numCharacters)
 		{
-			check(dst.mSize >= numCharacters);
-			dst.mStart += numCharacters;
-			dst.mSize -= numCharacters;
+			check(dst.size >= numCharacters);
+			dst.start += numCharacters;
+			dst.size -= numCharacters;
 		}
 
 		inline void TrimNul(StringView& dst)
 		{
-			if (dst.mSize > 0 && dst.mStart[dst.mSize - 1] == 0)
+			if (dst.size > 0 && dst.start[dst.size - 1] == 0)
 			{
 				ChopRight(dst, 1);
 			}
@@ -98,12 +98,12 @@ namespace Turbo
 
 		inline bool Compare(const StringView& lhs, const StringView& rhs)
 		{
-			return lhs.mSize == rhs.mSize && (lhs.mSize == 0 || strncmp(lhs.mStart, rhs.mStart, lhs.mSize) == 0);
+			return lhs.size == rhs.size && (lhs.size == 0 || strncmp(lhs.start, rhs.start, lhs.size) == 0);
 		}
 
 		inline ByteView ToByteView(const StringView& sv)
 		{
-			return {(u8*)sv.mStart, sv.mSize};
+			return {(u8*)sv.start, sv.size};
 		}
 	}
 } // namespace Turbo

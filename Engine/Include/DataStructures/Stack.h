@@ -12,11 +12,11 @@ struct TStaticStack
 {
 	using Iterator = T*;
 
-	T mData[capacity];
-	u32 mSize;
+	T data[capacity];
+	u32 size;
 
 	TStaticStack()
-		: mSize(0)
+		: size(0)
 	{
 	}
 
@@ -25,11 +25,11 @@ struct TStaticStack
 	{
 		check(initializerList.size() <= capacity);
 
-		mSize = initializerList.size();
+		size = initializerList.size();
 		u32 i = 0;
 		for (const T& element : initializerList)
 		{
-			mData[i] = element;
+			data[i] = element;
 			++i;
 		}
 	}
@@ -38,11 +38,11 @@ struct TStaticStack
 	{
 		check(initializerList.size() <= capacity);
 
-		mSize = initializerList.size();
+		size = initializerList.size();
 		u32 i = 0;
 		for (const T& element : initializerList)
 		{
-			mData[i] = element;
+			data[i] = element;
 			++i;
 		}
 
@@ -52,52 +52,52 @@ struct TStaticStack
 
 	T& Push(const T& newElement)
 	{
-		check(mSize + 1 <= capacity);
-		++mSize;
+		check(size + 1 <= capacity);
+		++size;
 
-		mData[mSize - 1] = newElement;
+		data[size - 1] = newElement;
 
-		return mData[mSize - 1];
+		return data[size - 1];
 	}
 
 	T& Push()
 	{
-		check(mSize + 1 <= capacity);
-		++mSize;
+		check(size + 1 <= capacity);
+		++size;
 
-		return mData[mSize - 1];
+		return data[size - 1];
 	}
 
 	void Pop()
 	{
-		check(mSize > 0);
-		--mSize;
+		check(size > 0);
+		--size;
 	}
 
 	void SetSize(u32 newSize)
 	{
 		check(newSize <= capacity);
-		mSize = newSize;
+		size = newSize;
 	}
 
-	void Empty() { mSize = 0; }
+	void Empty() { size = 0; }
 
-	bool IsEmpty() { return mSize == 0; }
+	bool IsEmpty() { return size == 0; }
 
 	/* Operators */
 	T& operator[](u32 index)
 	{
-		check(index < mSize);
-		return mData[index];
+		check(index < size);
+		return data[index];
 	}
 
 	const T& operator[](u32 index) const
 	{
-		check(index < mSize);
-		return mData[index];
+		check(index < size);
+		return data[index];
 	}
 
 	/* Iterators () */
-	Iterator begin() { return mData; }
-	Iterator end() { return mData + mSize; }
+	Iterator begin() { return data; }
+	Iterator end() { return data + size; }
 };

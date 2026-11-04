@@ -19,7 +19,7 @@
 #define WITH_DEBUG_RENDERING_FEATURES TURBO_DEVELOPMENT
 
 /* Macros */
-#define mCtx (static_cast<PlatformRenderContext*>(mContext))
+#define ctx (static_cast<PlatformRenderContext*>(context))
 #define vkCheck(EXPRESSION)                                                                                            \
 	do                                                                                                                  \
 	{                                                                                                                   \
@@ -32,19 +32,19 @@ namespace Turbo
 	/* Data structures */
 	struct PlatformRenderContext
 	{
-		VkInstance mVkInstance = nullptr;
-		VkPhysicalDevice mVkPhysicalDevice = nullptr;
-		VkDevice mVkDevice = nullptr;
+		VkInstance vkInstance = nullptr;
+		VkPhysicalDevice vkPhysicalDevice = nullptr;
+		VkDevice vkDevice = nullptr;
 
-		u32 mGraphicsQueueFamily = 0;
-		VkQueue mGraphicsQueue = nullptr;
+		u32 graphicsQueueFamily = 0;
+		VkQueue graphicsQueue = nullptr;
 
-		VkSurfaceKHR mVkSurface = nullptr;
+		VkSurfaceKHR vkSurface = nullptr;
 
-		VmaAllocator mVmaAllocator = {};
+		VmaAllocator vmaAllocator = {};
 
 #if WITH_DEBUG_RENDERING_FEATURES
-		VkDebugUtilsMessengerEXT mVkDebugUtilsMessenger = nullptr;
+		VkDebugUtilsMessengerEXT vkDebugUtilsMessenger = nullptr;
 #endif // WITH_DEBUG_RENDERING_FEATURES
 	};
 
@@ -82,12 +82,12 @@ namespace Turbo
 
 	GPUDevice* GPUDevice::Create(Engine* engine)
 	{
-		return engine->mPersistentMemory.Allocate<GPUDevice>();
+		return engine->persistentMemory.Allocate<GPUDevice>();
 	}
 
 	void GPUDevice::Init(Engine* engine)
 	{
-		mContext = engine->mPersistentMemory.Allocate<PlatformRenderContext>();
+		context = engine->persistentMemory.Allocate<PlatformRenderContext>();
 
 		/* Create vulkan instance */
 		{
@@ -121,12 +121,12 @@ namespace Turbo
 				.pApplicationInfo = &vkAppInfo,
 				.enabledLayerCount = arrayLen(enabledLayers),
 				.ppEnabledLayerNames = enabledLayers,
-				.enabledExtensionCount = instanceExtensions.mSize,
-				.ppEnabledExtensionNames = instanceExtensions.mData,
+				.enabledExtensionCount = instanceExtensions.size,
+				.ppEnabledExtensionNames = instanceExtensions.data,
 			};
 
-			vkCheck(vkCreateInstance(&instanceCI, nullptr, &mCtx->mVkInstance));
-			volkLoadInstance(mCtx->mVkInstance);
+			vkCheck(vkCreateInstance(&instanceCI, nullptr, &ctx->vkInstance));
+			volkLoadInstance(ctx->vkInstance);
 			TURBO_LOG(Log, "Vulkan instance created.");
 
 #if WITH_DEBUG_RENDERING_FEATURES
@@ -144,10 +144,10 @@ namespace Turbo
 			};
 
 			vkCheck(vkCreateDebugUtilsMessengerEXT(
-				mCtx->mVkInstance,
+				ctx->vkInstance,
 				&debugUtilsMessengerCI,
 				nullptr,
-				&mCtx->mVkDebugUtilsMessenger
+				&ctx->vkDebugUtilsMessenger
 			));
 
 			TURBO_LOG(Log, "Debug messenger created.");
@@ -158,10 +158,10 @@ namespace Turbo
 		{
 			u32 deviceCount = 4;
 			VkPhysicalDevice physicalDevices[deviceCount];
-			vkCheck(vkEnumeratePhysicalDevices(mCtx->mVkInstance, &deviceCount, physicalDevices));
+			vkCheck(vkEnumeratePhysicalDevices(ctx->vkInstance, &deviceCount, physicalDevices));
 			verify(deviceCount > 0);
 
-			mCtx->mVkPhysicalDevice = physicalDevices[0];
+			ctx->vkPhysicalDevice = physicalDevices[0];
 
 			VkPhysicalDevice discreteGPU = nullptr;
 			VkPhysicalDevice integratedGPU = nullptr;
@@ -186,15 +186,15 @@ namespace Turbo
 
 			if (discreteGPU)
 			{
-				mCtx->mVkPhysicalDevice = discreteGPU;
+				ctx->vkPhysicalDevice = discreteGPU;
 			}
 			else if (integratedGPU)
 			{
-				mCtx->mVkPhysicalDevice = integratedGPU;
+				ctx->vkPhysicalDevice = integratedGPU;
 			}
 
 			VkPhysicalDeviceProperties2 deviceProperties = {.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
-			vkGetPhysicalDeviceProperties2(mCtx->mVkPhysicalDevice, &deviceProperties);
+			vkGetPhysicalDeviceProperties2(ctx->vkPhysicalDevice, &deviceProperties);
 
 			TURBO_LOG(Log, "Selected device: %s", deviceProperties.properties.deviceName);
 		}
@@ -203,25 +203,25 @@ namespace Turbo
 		{
 			u32 numQueueFamilies = 16;
 			VkQueueFamilyProperties queueFamilyProperties[numQueueFamilies];
-			vkGetPhysicalDeviceQueueFamilyProperties(mCtx->mVkPhysicalDevice, &numQueueFamilies, queueFamilyProperties);
+			vkGetPhysicalDeviceQueueFamilyProperties(ctx->vkPhysicalDevice, &numQueueFamilies, queueFamilyProperties);
 
-			bool bQueueFamilyFound = false;
+			bool queueFamilyFound = false;
 
 			for (u32 i = 0; i < numQueueFamilies; ++i)
 			{
 				const VkQueueFamilyProperties& queueFamilyProps = queueFamilyProperties[i];
 				if (queueFamilyProps.queueFlags & VK_QUEUE_GRAPHICS_BIT)
 				{
-					mCtx->mGraphicsQueueFamily = i;
-					bQueueFamilyFound = true;
+					ctx->graphicsQueueFamily = i;
+					queueFamilyFound = true;
 					break;
 				}
 			}
-			verify(bQueueFamilyFound);
+			verify(queueFamilyFound);
 			verify(GetPhysicalDevicePresentationSupport(
-				mCtx->mVkInstance,
-				mCtx->mVkPhysicalDevice,
-				mCtx->mGraphicsQueueFamily
+				ctx->vkInstance,
+				ctx->vkPhysicalDevice,
+				ctx->graphicsQueueFamily
 			));
 		}
 
@@ -232,7 +232,7 @@ namespace Turbo
 			const float queuePriorities[] = {1.f};
 			const VkDeviceQueueCreateInfo queueCI = {
 				.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-				.queueFamilyIndex = mCtx->mGraphicsQueueFamily,
+				.queueFamilyIndex = ctx->graphicsQueueFamily,
 				.queueCount = arrayLen(queuePriorities),
 				.pQueuePriorities = queuePriorities,
 			};
@@ -267,26 +267,26 @@ namespace Turbo
 				.pEnabledFeatures = &vk10Features
 			};
 
-			vkCheck(vkCreateDevice(mCtx->mVkPhysicalDevice, &deviceCI, nullptr, &mCtx->mVkDevice));
-			volkLoadDevice(mCtx->mVkDevice);
+			vkCheck(vkCreateDevice(ctx->vkPhysicalDevice, &deviceCI, nullptr, &ctx->vkDevice));
+			volkLoadDevice(ctx->vkDevice);
 
-			vkGetDeviceQueue(mCtx->mVkDevice, mCtx->mGraphicsQueueFamily, 0, &mCtx->mGraphicsQueue);
+			vkGetDeviceQueue(ctx->vkDevice, ctx->graphicsQueueFamily, 0, &ctx->graphicsQueue);
 
 			TURBO_LOG(Log, "Vulkan logical device created.");
 		}
 
 		/* Obtain Surface */
 		{
-			vkCheck((VkResult)GetVulkanSurface(engine->mPlatformContext, mCtx->mVkInstance, mCtx->mVkSurface));
+			vkCheck((VkResult)GetVulkanSurface(engine->platformContext, ctx->vkInstance, ctx->vkSurface));
 		}
 
 		/* Init VMA */
 		{
 			VmaAllocatorCreateInfo createInfo = {
 				.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
-				.physicalDevice = mCtx->mVkPhysicalDevice,
-				.device = mCtx->mVkDevice,
-				.instance = mCtx->mVkInstance,
+				.physicalDevice = ctx->vkPhysicalDevice,
+				.device = ctx->vkDevice,
+				.instance = ctx->vkInstance,
 				.vulkanApiVersion = VK_API_VERSION_1_3,
 			};
 
@@ -294,7 +294,7 @@ namespace Turbo
 			vmaImportVulkanFunctionsFromVolk(&createInfo, &vmaVulkanFunctions);
 			createInfo.pVulkanFunctions = &vmaVulkanFunctions;
 
-			vkCheck(vmaCreateAllocator(&createInfo, &mCtx->mVmaAllocator));
+			vkCheck(vmaCreateAllocator(&createInfo, &ctx->vmaAllocator));
 			TURBO_LOG(Log, "VMA Allocator created.");
 		}
 	}
@@ -305,27 +305,27 @@ namespace Turbo
 
 		DestroySwapchain();
 
-		vkDestroySurfaceKHR(mCtx->mVkInstance, mCtx->mVkSurface, nullptr);
+		vkDestroySurfaceKHR(ctx->vkInstance, ctx->vkSurface, nullptr);
 
-		vmaDestroyAllocator(mCtx->mVmaAllocator);
+		vmaDestroyAllocator(ctx->vmaAllocator);
 
-		vkDestroyDevice(mCtx->mVkDevice, nullptr);
+		vkDestroyDevice(ctx->vkDevice, nullptr);
 
 #if WITH_DEBUG_RENDERING_FEATURES
-		vkDestroyDebugUtilsMessengerEXT(mCtx->mVkInstance, mCtx->mVkDebugUtilsMessenger, nullptr);
+		vkDestroyDebugUtilsMessengerEXT(ctx->vkInstance, ctx->vkDebugUtilsMessenger, nullptr);
 #endif // WITH_DEBUG_RENDERING_FEATURES
 
-		vkDestroyInstance(mCtx->mVkInstance, nullptr);
+		vkDestroyInstance(ctx->vkInstance, nullptr);
 	}
 
-	void GPUDevice::WaitGPUIdle() { vkCheck(vkDeviceWaitIdle(mCtx->mVkDevice)); }
+	void GPUDevice::WaitGPUIdle() { vkCheck(vkDeviceWaitIdle(ctx->vkDevice)); }
 
 	void GPUDevice::CreateSwapchain(PlatformContext* platformCtx)
 	{
 		VkSurfaceCapabilitiesKHR vkSurfaceCapabilities;
 		vkCheck(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-			mCtx->mVkPhysicalDevice,
-			mCtx->mVkSurface,
+			ctx->vkPhysicalDevice,
+			ctx->vkSurface,
 			&vkSurfaceCapabilities
 		));
 

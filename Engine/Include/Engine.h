@@ -18,14 +18,14 @@ namespace Turbo
 	struct Engine
 	{
 		/* Data */
-		Arena mPersistentMemory = {};
-		Arena mTransientMemory = {};
+		Arena persistentMemory = {};
+		Arena transientMemory = {};
 
 		void* NameDB = nullptr;
-		PlatformContext* mPlatformContext = nullptr;
-		GPUDevice* mGpu = nullptr;
+		PlatformContext* platformContext = nullptr;
+		GPUDevice* gpu = nullptr;
 
-		bool mbShouldTick = false;
+		bool shouldTick = false;
 
 		/* API */
 		void Init(void* permanent, u64 permanentSize, void* transient, u64 transientSize);

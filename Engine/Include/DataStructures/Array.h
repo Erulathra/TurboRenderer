@@ -8,16 +8,16 @@ namespace Turbo
 	struct TArrayView
 	{
 		/* Data */
-		T* mStart = nullptr;
-		u64 mSize = 0;
+		T* start = nullptr;
+		u64 size = 0;
 
 		/* Ctors */
-		TArrayView(T* start, u64 size) : mStart(start), mSize(size) {}
-		TArrayView(T* start, T* end) : mStart(start), mSize(u64((iPtr)end - (iPtr)start)) { check(start < end); }
+		TArrayView(T* inStart, u64 inSize) : start(inStart), size(inSize) {}
+		TArrayView(T* inStart, T* inEnd) : start(inStart), size(u64((iPtr)inEnd - (iPtr)inStart)) { check(inStart < inEnd); }
 
 		/* range-based-for requiments */
-		FORCEINLINE T* begin() { return mStart; }
-		FORCEINLINE T* end() { return mStart + mSize; }
+		FORCEINLINE T* begin() { return start; }
+		FORCEINLINE T* end() { return start + size; }
 	};
 
 	using ByteView = TArrayView<u8>;

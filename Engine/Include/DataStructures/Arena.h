@@ -6,20 +6,20 @@ namespace Turbo
 {
 	struct Arena
 	{
-		void* mAllocation = nullptr;
-		void* mTop = nullptr;
-		void* mTip = nullptr;
-		bool mbInitialized = false;
+		void* allocation = nullptr;
+		void* top = nullptr;
+		void* tip = nullptr;
+		bool initialized = false;
 
 		void Init(void* data, u64 size)
 		{
 			check(data && size > 0);
 
-    		mAllocation = data;
+    		allocation = data;
 
-    		mTip = (u8*)mAllocation + size;
-    		mTop = (u8*)mAllocation;
-         mbInitialized = true;
+    		tip = (u8*)allocation + size;
+    		top = (u8*)allocation;
+         initialized = true;
 		}
 
 		static Arena Create(void* data, u64 size)
@@ -31,7 +31,7 @@ namespace Turbo
 
 		u64 Size() const
 		{
-         return (u8*)mTip - (u8*)mAllocation;
+         return (u8*)tip - (u8*)allocation;
 		}
 
 		template<typename T>
@@ -43,32 +43,32 @@ namespace Turbo
 
 		void* Allocate(u64 size)
 		{
-			check(mAllocation != nullptr && mTop != nullptr && mTip != nullptr);
+			check(allocation != nullptr && top != nullptr && tip != nullptr);
 			check(size > 0);
 
-			void* result = Align16(mTop);
+			void* result = Align16(top);
 			void* newTop = (u8*)result + size;
-			check(newTop <= mTip);
+			check(newTop <= tip);
 
-			mTop = newTop;
+			top = newTop;
 
 			return result;
 		}
 
 		char* AllocateString(u64 size)
 		{
-			check(mAllocation != nullptr && mTop != nullptr && mTip != nullptr);
+			check(allocation != nullptr && top != nullptr && tip != nullptr);
 			check(size > 0);
 
-			void* result = mTop;
+			void* result = top;
 			void* newTop = (u8*)result + size;
-			check(newTop <= mTip);
+			check(newTop <= tip);
 
-			mTop = newTop;
+			top = newTop;
 
 			return (char*)result;
 		}
 
-		void Clear() { mTop = mAllocation; }
+		void Clear() { top = allocation; }
 	};
 } // namespace Turbo
