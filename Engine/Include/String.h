@@ -18,7 +18,7 @@ namespace Turbo
 
 	struct Name
 	{
-		const char* stringLookUp;
+		const char* stringLookUp = nullptr;
 		u64 id = 0;
 
 		Name() = delete;
@@ -26,7 +26,10 @@ namespace Turbo
 
 		bool operator==(const Name& rhs) const { return id == rhs.id; }
 		bool operator!=(const Name& rhs) const { return !(*this == rhs); }
+
+		static Name None();
 	};
+
 
 	namespace String
 	{

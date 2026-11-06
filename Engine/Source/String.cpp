@@ -80,4 +80,11 @@ namespace Turbo
 		id = FindOrAddName(String::MakeStringView(cstr));
 		stringLookUp = gNameDB->slots[id].start;
 	}
+
+	Name Name::None()
+	{
+		checkf(gNameDB, "Woops, you are trying to access NameDB before it's initialization.");
+		static Name noneName = Name("None");
+		return noneName;
+	}
 } // namespace Turbo
