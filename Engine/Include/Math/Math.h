@@ -84,6 +84,13 @@ namespace Turbo
 	// ##################################################################################
 
 	template <typename SrcT>
+	u16 TruncToU16(SrcT x)
+	{
+		check(x >= 0 && x <= U16_MAX);
+		return (u16)(x);
+	}
+
+	template <typename SrcT>
 	u32 TruncToU32(SrcT x)
 	{
 		check(x >= 0 && x <= U32_MAX);
@@ -95,6 +102,13 @@ namespace Turbo
 	{
 		check(x >= 0 && x <= U64_MAX);
 		return (u64)(x);
+	}
+
+	template <typename SrcT>
+	i16 TruncToI16(SrcT x)
+	{
+		check(x >= I16_MIN && x <= I16_MAX);
+		return (i16)(x);
 	}
 
 	template <typename SrcT>

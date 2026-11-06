@@ -26,5 +26,6 @@ namespace Turbo
 	FORCEINLINE u32 CountLeadingZeros(u32 value) { return __builtin_clz(value); }
 	FORCEINLINE u32 CountTrailingOnes(u32 value) { return __builtin_ctz(~value); }
 	FORCEINLINE u32 CountLeadingOnes(u32 value) { return __builtin_clz(~value); }
+	FORCEINLINE u32 PopCount(u32 value) { return __builtin_popcount(value); }
 
 } // namespace Turbo

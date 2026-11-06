@@ -1,65 +1,28 @@
 #pragma once
 
-#include "DataStructures/Arena.h"
-
 namespace Turbo
 {
+	template<u32 numBits>
 	struct BitArray
 	{
+		/* Static helpers */
+		constexpr static u32 NumBits() { return numBits; }
+		constexpr static u32 Size() { return NumWords() * sizeof(u32); }
+		constexpr static u32 NumWords() { return (numBits + 31) / 32; }
+
 		/* Data */
-		u32* data = nullptr;
-		u32 bitSize = 0;
-		u32 numWords = 0;
+		u32 data[NumWords()];
+		u32 numWords = NumWords();
 
-		/* Interface */
-		static u32 CalculateNumWords(u32 numBits) { return (numBits + 31) / 32; }
-		static u32 CalculateSize(u32 numBits) { return CalculateNumWords(numBits) * sizeof(u32); }
-
-		static BitArray Create(Arena& arena, u32 numBits)
+		FORCEINLINE bool Get(u32 bitIndex)
 		{
-			BitArray result;
-			result.Init(arena, numBits);
-
-			return result;
-		}
-
-		static BitArray Create(void* data, u32 numBits)
-		{
-			BitArray result;
-			result.Init(data, numBits);
-
-			return result;
-		}
-
-		void Init(Arena& arena, u32 numBits)
-		{
-			numWords = CalculateNumWords(numBits);
-			data = (u32*)arena.Allocate(numWords);
-			bitSize = numBits;
-
-			MemZero(data, numWords * sizeof(u32));
-		}
-
-		void Init(void* initData, u32 numBits)
-		{
-			check(initData);
-
-			data = (u32*)initData;
-			bitSize = numBits;
-			numWords = CalculateNumWords(numBits);
-
-			MemZero(data, numWords * sizeof(u32));
-		}
-
-		bool Get(u32 bitIndex)
-		{
-			check(bitIndex < bitSize);
+			check(bitIndex < NumBits());
 			return (data[GetElementIndex(bitIndex)] & (1 << GetElementBitIndex(bitIndex))) != 0;
 		}
 
 		void Set(u32 bitIndex, bool value)
 		{
-			check(bitIndex < bitSize);
+			check(bitIndex < NumBits());
 
 			const u32 elementIndex = GetElementIndex(bitIndex);
 			const u32 elementBitIndex = GetElementBitIndex(bitIndex);
@@ -87,7 +50,7 @@ namespace Turbo
 
 					const u32 bitIndex = dataIndex * 32 + trailingZeros;
 
-					if (bitIndex < bitSize)
+					if (bitIndex < NumBits())
 					{
 						Invoke(func, bitIndex);
 					}
@@ -108,7 +71,7 @@ namespace Turbo
 				}
 			}
 
-			return bitSize;
+			return NumBits();
 		}
 
 		/* Returns `bitSize` if not found */
@@ -122,13 +85,13 @@ namespace Turbo
 				}
 			}
 
-			return bitSize;
+			return NumBits();
 		}
 
 		/* Internal helpers */
 		u32 GetElementIndex(u32 bitIndex) const
 		{
-			check(bitIndex < bitSize);
+			check(bitIndex < NumBits());
 			return bitIndex / 32;
 		}
 
