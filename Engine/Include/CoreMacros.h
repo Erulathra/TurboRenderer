@@ -7,6 +7,34 @@
 #define arrayLen(array) (sizeof(array) / sizeof(array[0]))
 #define invalidDefaultCase default: verify(false); break;
 
+// NOTE(SS): Use only with enum structs
+#define DEFINE_ENUM_OPERATORS(ENUM_TYPE)                                                                               \
+	using ENUM_TYPE##_Underlying = std::underlying_type_t<ENUM_TYPE>;                                                   \
+	constexpr ENUM_TYPE operator~(ENUM_TYPE rhs)                                                                        \
+	{                                                                                                                   \
+		return static_cast<ENUM_TYPE>(~static_cast<ENUM_TYPE##_Underlying>(rhs));                                        \
+	}                                                                                                                   \
+	constexpr ENUM_TYPE operator|(ENUM_TYPE lhs, ENUM_TYPE rhs)                                                         \
+	{                                                                                                                   \
+		return (ENUM_TYPE)((ENUM_TYPE##_Underlying)(lhs) | (ENUM_TYPE##_Underlying)(rhs));                               \
+	}                                                                                                                   \
+	constexpr ENUM_TYPE operator&(ENUM_TYPE lhs, ENUM_TYPE rhs)                                                         \
+	{                                                                                                                   \
+		return (ENUM_TYPE)((ENUM_TYPE##_Underlying)(lhs) & (ENUM_TYPE##_Underlying)(rhs));                               \
+	}                                                                                                                   \
+	constexpr ENUM_TYPE operator^(ENUM_TYPE lhs, ENUM_TYPE rhs)                                                         \
+	{                                                                                                                   \
+		return (ENUM_TYPE)((ENUM_TYPE##_Underlying)(lhs) ^ (ENUM_TYPE##_Underlying)(rhs));                               \
+	}                                                                                                                   \
+	constexpr ENUM_TYPE& operator|=(ENUM_TYPE& lhs, ENUM_TYPE rhs) noexcept { return lhs = (lhs | rhs); }               \
+	constexpr ENUM_TYPE& operator&=(ENUM_TYPE& lhs, ENUM_TYPE rhs) noexcept { return lhs = (lhs & rhs); }               \
+	constexpr ENUM_TYPE& operator^=(ENUM_TYPE& lhs, ENUM_TYPE rhs) noexcept { return lhs = (lhs ^ rhs); }               \
+	constexpr bool operator==(ENUM_TYPE lhs, ENUM_TYPE##_Underlying rhs) noexcept                                       \
+	{                                                                                                                   \
+		return (ENUM_TYPE##_Underlying)lhs == rhs;                                                                       \
+	}                                                                                                                   \
+	constexpr bool operator!=(ENUM_TYPE lhs, ENUM_TYPE##_Underlying rhs) noexcept { return !(lhs == rhs); }
+
 // ##################################################################################
 //                                   Math constants
 // ##################################################################################

@@ -1,3 +1,5 @@
+#include <type_traits>
+
 #include "PlatformMacros.h"
 #include "TypeDefs.h"
 #include "CoreMacros.h"
