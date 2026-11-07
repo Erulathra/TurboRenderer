@@ -41,7 +41,7 @@ namespace Turbo
 	template <typename T>
 	struct THandle final : public Handle
 	{
-		FORCEINLINE static THandle<T> Create(u32 index, u32 gen) { return THandle<T>(CreateIndex(index, gen)); }
+		FORCEINLINE static THandle<T> Create(u32 index, u32 gen) { return {CreateIndex(index, gen)}; }
 		FORCEINLINE static THandle<T> Nil() { return THandle<T>(); }
 	};
 
@@ -70,13 +70,13 @@ namespace Turbo
 		FORCEINLINE T* Get(THandle<T> handle)
 		{
 			const IndexType idx = DeRef(handle);
-			return idx != 0 ? data[idx] : nullptr;
+			return idx != 0 ? &data[idx] : nullptr;
 		}
 
 		FORCEINLINE const T* Get(THandle<T> handle) const
 		{
 			const IndexType idx = DeRef(handle);
-			return idx != 0 ? data[idx] : nullptr;
+			return idx != 0 ? &data[idx] : nullptr;
 		}
 
 		THandle<T> Acquire()
