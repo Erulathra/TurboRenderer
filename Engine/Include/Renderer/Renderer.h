@@ -1,12 +1,21 @@
 #pragma once
 
+#include "DataStructures/Handle.h"
+#include "Renderer/Resources.h"
+
 namespace Turbo
 {
 	struct Engine;
 
+	namespace Renderer
+	{
+		constexpr static u32 maxTextures = 1024;
+
+		constexpr static u32 maxFramesInFlight = 3;
+	}
+
 	struct GPUDevice
 	{
-		/* Data */
 		/* Platform specific context. Hidden under abstraction. */
 		void* context;
 
@@ -21,5 +30,12 @@ namespace Turbo
 		/* Swapchain */
 		void CreateSwapchain(PlatformContext* platformCtx);
 		void DestroySwapchain();
+
+		/* Resource management */
+		THandle<Texture> CreateTexture(const TextureBuilder textureBuilder);
+
+		Texture* Access(THandle<Texture> handle);
+
+		void Destroy(THandle<Texture> handle);
 	};
 } // namespace Turbo

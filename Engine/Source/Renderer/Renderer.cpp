@@ -1,7 +1,8 @@
 #include "Renderer/Renderer.h"
 
-#include "VulkanHelpers.h"
 #include "DataStructures/Stack.h"
+#include "VulkanHelpers.h"
+#include "ResourcePool.h"
 
 #define VOLK_IMPLEMENTATION
 #include "volk.h"
@@ -29,6 +30,13 @@
 
 namespace Turbo
 {
+	/* Internal resource data */
+	struct IntTexture
+	{
+		VkImage vkImage = nullptr;
+		VkImageView vkImageView = nullptr;
+	};
+
 	/* Data structures */
 	struct PlatformRenderContext
 	{
@@ -40,12 +48,18 @@ namespace Turbo
 		VkQueue graphicsQueue = nullptr;
 
 		VkSurfaceKHR vkSurface = nullptr;
+		VkSwapchainKHR vkSwapchain = nullptr;
+
+		TStaticStack<THandle<Texture>, Renderer::maxFramesInFlight> swapchainImages;
 
 		VmaAllocator vmaAllocator = {};
 
 #if WITH_DEBUG_RENDERING_FEATURES
 		VkDebugUtilsMessengerEXT vkDebugUtilsMessenger = nullptr;
 #endif // WITH_DEBUG_RENDERING_FEATURES
+
+		/* Resources */
+		TResourcePool<Texture, IntTexture, Renderer::maxTextures> texturePool;
 	};
 
 	/* Functions and methods */
@@ -335,13 +349,80 @@ namespace Turbo
 		{
 			swapchainExtent = ToVkExtent2D(GetFrameBufferSize(platformCtx));
 		}
-		TURBO_LOG(Log, "New Swapchain resolution: %ux%u", swapchainExtent.width, swapchainExtent.height);
 
+		// TODO(SS): Replace with proper present mode and swapchain format handling
+		const VkFormat swapchainFormat = VK_FORMAT_B8G8R8A8_SRGB;
+		const VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
 
+		const VkSwapchainCreateInfoKHR swapchainCI = {
+			.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+			.surface = ctx->vkSurface,
+			.minImageCount = vkSurfaceCapabilities.minImageCount,
+			.imageFormat = swapchainFormat,
+			.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
+			.imageExtent = swapchainExtent,
+			.imageArrayLayers = 1,
+			.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+			.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
+			.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+			.presentMode = presentMode
+		};
+		vkCheck(vkCreateSwapchainKHR(ctx->vkDevice, &swapchainCI, nullptr, &ctx->vkSwapchain));
+
+		/* Obtain swapchain images */
+		u32 imagesCount = Renderer::maxFramesInFlight;
+		VkImage swapchainImages[Renderer::maxFramesInFlight];
+		vkCheck(vkGetSwapchainImagesKHR(ctx->vkDevice, ctx->vkSwapchain, &imagesCount, swapchainImages));
+
+		for (u32 i = 0; i < imagesCount; ++i)
+		{
+			/* Create abstraction */
+			const THandle<Texture> textureHandle = ctx->texturePool.Acquire();
+			check(textureHandle);
+
+			ctx->swapchainImages.Push(textureHandle);
+
+			Texture* texture = ctx->texturePool.Get(textureHandle);
+			*texture = {
+				.mFlags = ETexFlags::SwapChain,
+				.mFormat = EPixFormat::BGRA8srgb,
+				.mWidth = TruncToU16(swapchainExtent.width),
+				.mHeight = TruncToU16(swapchainExtent.height),
+				.mName = Name("SwapchainImage"),
+			};
+
+			IntTexture* intTexture = ctx->texturePool.GetInternal(textureHandle);
+			*intTexture = {
+				.vkImage = swapchainImages[i],
+			};
+		}
+
+		TURBO_LOG(Log, "Swaphchain created. [%ux%u] (Frames: %u)", swapchainExtent.width, swapchainExtent.height, imagesCount);
 	}
 
 	void GPUDevice::DestroySwapchain()
 	{
-		// TODO(SS)
+		if (ctx->vkSwapchain)
+		{
+			vkDestroySwapchainKHR(ctx->vkDevice, ctx->vkSwapchain, nullptr);
+			ctx->vkSwapchain = nullptr;
+		}
+
+		for (THandle<Texture> handle : ctx->swapchainImages)
+		{
+			IntTexture* intTexture = ctx->texturePool.GetInternal(handle);
+			vkDestroyImageView(ctx->vkDevice, intTexture->vkImageView, nullptr);
+
+			ctx->texturePool.Release(handle);
+		}
+		ctx->swapchainImages.Empty();
 	}
+
+	THandle<Texture> GPUDevice::CreateTexture(const TextureBuilder textureBuilder)
+	{
+		unimplemented();
+		return {};
+	}
+	Texture* GPUDevice::Access(THandle<Texture> handle) { return ctx->texturePool.Get(handle); }
+	void GPUDevice::Destroy(THandle<Texture> handle) { unimplemented(); }
 } // namespace Turbo

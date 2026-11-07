@@ -12,7 +12,6 @@ namespace Turbo
 
 		/* Data */
 		u32 data[NumWords()];
-		u32 numWords = NumWords();
 
 		FORCEINLINE bool Get(u32 bitIndex) const
 		{
@@ -40,7 +39,7 @@ namespace Turbo
 		template <typename FuncType>
 		void IterateOverEnabledBits(const FuncType& func) const
 		{
-			for (u32 dataIndex = 0; dataIndex < numWords; ++dataIndex)
+			for (u32 dataIndex = 0; dataIndex < NumWords(); ++dataIndex)
 			{
 				u32 dataValue = data[dataIndex];
 				while (dataValue != 0)
@@ -63,7 +62,7 @@ namespace Turbo
 		/* Returns `bitSize` if not found */
 		u32 FindFirstZero() const
 		{
-			for (u32 dataIndex = 0; dataIndex < numWords; ++dataIndex)
+			for (u32 dataIndex = 0; dataIndex < NumWords(); ++dataIndex)
 			{
 				if (const u32 trailingOnes = CountTrailingOnes(data[dataIndex]); trailingOnes < 32)
 				{
@@ -77,7 +76,7 @@ namespace Turbo
 		/* Returns `bitSize` if not found */
 		u32 FindFirstOne() const
 		{
-			for (u32 dataIndex = 0; dataIndex < numWords; ++dataIndex)
+			for (u32 dataIndex = 0; dataIndex < NumWords(); ++dataIndex)
 			{
 				if (const u32 trailingOnes = CountTrailingZeros(data[dataIndex]); trailingOnes < 32)
 				{

@@ -43,5 +43,7 @@
 #endif // else WITH_ASSERTIONS
 
 #define checkNoEntry() checkf(false, "checkNoEntry failed")
+#define unimplemented() checkf(false, "Unimplemented.")
+
 
 #define mathDiagnosticCheck(CONDITION) check(CONDITION)
