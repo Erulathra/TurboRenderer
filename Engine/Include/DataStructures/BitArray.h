@@ -14,7 +14,7 @@ namespace Turbo
 		u32 data[NumWords()];
 		u32 numWords = NumWords();
 
-		FORCEINLINE bool Get(u32 bitIndex)
+		FORCEINLINE bool Get(u32 bitIndex) const
 		{
 			check(bitIndex < NumBits());
 			return (data[GetElementIndex(bitIndex)] & (1 << GetElementBitIndex(bitIndex))) != 0;
@@ -95,6 +95,6 @@ namespace Turbo
 			return bitIndex / 32;
 		}
 
-		u32 GetElementBitIndex(u32 bitIndex) { return bitIndex % 32; }
+		u32 GetElementBitIndex(u32 bitIndex) const { return bitIndex % 32; }
 	};
 } // namespace Turbo
