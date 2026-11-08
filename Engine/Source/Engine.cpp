@@ -1,5 +1,6 @@
 #include "Engine.h"
 
+#include "Graphics.h"
 #include "Renderer/Renderer.h"
 
 #include "String.h"
@@ -30,12 +31,17 @@ namespace Turbo
 		gpu->Init(this);
 		gpu->CreateSwapchain(platformContext);
 
+		graphics = Graphics::Create(this);
+		graphics->Init(this);
+
 		shouldTick = true;
 	}
 
 	void Engine::Shutdown()
 	{
 		TURBO_LOG(Log, "Shutting down Turbo::Engine.");
+
+		graphics->Shutdown(this);
 
 		gpu->Shutdown(this);
 

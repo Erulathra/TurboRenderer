@@ -7,3 +7,5 @@
 #include "Assert.h"
 #include "Math/Math.h"
 #include "Platform.h"
+
+#include "DataStructures/Handle.h"

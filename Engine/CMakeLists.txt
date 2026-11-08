@@ -4,6 +4,7 @@ set(SOURCE_FILES
 	Source/Engine.cpp
 	Source/Logging.cpp
 	Source/String.cpp
+	Source/Graphics.cpp
 
 	Source/Renderer/Renderer.cpp
 	Source/Renderer/VulkanHelpers.cpp

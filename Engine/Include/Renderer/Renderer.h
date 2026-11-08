@@ -30,6 +30,7 @@ namespace Turbo
 		/* Swapchain */
 		void CreateSwapchain(PlatformContext* platformCtx);
 		void DestroySwapchain();
+		UVec2 GetSurfaceSize();
 
 		/* Resource management */
 		THandle<Texture> CreateTexture(const TextureBuilder textureBuilder);

@@ -433,6 +433,14 @@ namespace Turbo
 		ctx->swapchainImages.Empty();
 	}
 
+	UVec2 GPUDevice::GetSurfaceSize()
+	{
+		check(ctx->swapchainImages.size > 0);
+		Texture* texture = Access(ctx->swapchainImages.First());
+
+		return {texture->width, texture->height};
+	}
+
 	THandle<Texture> GPUDevice::CreateTexture(const TextureBuilder builder)
 	{
 		THandle<Texture> handle = ctx->texturePool.Acquire();

@@ -84,6 +84,11 @@ struct TStaticStack
 
 	bool IsEmpty() { return size == 0; }
 
+	T& First() { return (*this)[0]; }
+	const T& First() const { return (*this)[0]; }
+	T& Top() { return (*this)[size - 1]; }
+	const T& Top() const { return (*this)[size - 1]; }
+
 	/* Operators */
 	T& operator[](u32 index)
 	{
@@ -96,7 +101,6 @@ struct TStaticStack
 		check(index < size);
 		return data[index];
 	}
-
 	/* Iterators () */
 	Iterator begin() { return data; }
 	Iterator end() { return data + size; }

@@ -5,6 +5,7 @@
 namespace Turbo
 {
 	struct GPUDevice;
+	struct Graphics;
 
 	enum struct EventType : u32
 	{
@@ -24,6 +25,8 @@ namespace Turbo
 		void* NameDB = nullptr;
 		PlatformContext* platformContext = nullptr;
 		GPUDevice* gpu = nullptr;
+
+		Graphics* graphics = nullptr;
 
 		bool shouldTick = false;
 
