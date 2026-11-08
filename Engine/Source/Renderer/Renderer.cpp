@@ -102,6 +102,7 @@ namespace Turbo
 	void GPUDevice::Init(Engine* engine)
 	{
 		context = engine->persistentMemory.Allocate<PlatformRenderContext>();
+		ctx->texturePool.Init();
 
 		/* Create vulkan instance */
 		{

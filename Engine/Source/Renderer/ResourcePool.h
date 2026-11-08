@@ -6,14 +6,18 @@
 namespace Turbo
 {
 	/*
-	 * NOTE(SS): As this is a ResourcePool created especially for renderer I should probably:
-	 *    1. Modify allocation strategy to reduce per slot generation usage.
-	 *    2. Make resource usage more protected. We can use `nil` slot as a Vulkan resource anyway.
+	 * NOTE(SS): This data structure is especially designed to work with renderer resources. It contains two arrays of two
+	 *    structure types. By design the first type is used as a abstraction type, and the second one as a internal
+	 *    type that contains data required by the particular Graphics API implementation.
+	 *
+	 *    To reduce slot saturation, the resource pool uses FIFO queue as the nextFree list.
 	 */
 
 	template <typename T, typename InternalT, u32 size>
 	struct TResourcePool
 	{
+		static_assert(size > 2);
+
 		/* Aliases */
 		using IndexType = u32;
 		using GenType = u32;
@@ -24,10 +28,27 @@ namespace Turbo
 		GenType generations[size];
 		BitArray<size> used;
 
+		/* Free slots lookup */
 		IndexType nextFree[size];
 		IndexType firstFree;
+		IndexType lastFree;
 
 		/* Api */
+
+		/* Assumes ZII. */
+		void Init()
+		{
+			firstFree = 1;
+			lastFree = Size() - 1;
+
+			nextFree[0] = 0;
+			nextFree[Size() - 1] = 0;
+			for (IndexType i = 1; i < (Size() - 1); ++i)
+			{
+				nextFree[i] = i + 1;
+			}
+		}
+
 		FORCEINLINE u32 Size() const { return size; }
 
 		FORCEINLINE T* Get(THandle<T> handle)
@@ -56,23 +77,11 @@ namespace Turbo
 
 		THandle<T> Acquire()
 		{
-			verify(firstFree < Size());
-
-			if (firstFree == 0 || used.Get(firstFree) == true)
-			{
-				firstFree++;
-			}
-
-			if (firstFree >= Size() || used.Get(firstFree) == true)
-			{
-				return THandle<T>::Nil();
-			}
+			verifyf(firstFree < Size() && firstFree != 0, "No more resources left.");
 
 			const u32 newIdx = firstFree;
-			if (nextFree[newIdx] != 0)
-			{
-				firstFree = nextFree[newIdx];
-			}
+			firstFree = nextFree[newIdx];
+			nextFree[newIdx] = 0;
 
 			used.Set(newIdx, true);
 
@@ -83,11 +92,17 @@ namespace Turbo
 		{
 			if (u32 idx = DeRef(handle))
 			{
-				if (firstFree)
+				if (firstFree == 0)
 				{
-					nextFree[idx] = firstFree;
+					nextFree[idx] = 0;
+					firstFree = idx;
+					lastFree = idx;
 				}
-				firstFree = idx;
+				else
+				{
+					nextFree[lastFree] = idx;
+					lastFree = idx;
+				}
 
 				used.Set(idx, false);
 
