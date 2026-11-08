@@ -35,6 +35,7 @@ namespace Turbo
 	{
 		VkImage vkImage = nullptr;
 		VkImageView vkImageView = nullptr;
+		VmaAllocation vmaAllocation = nullptr;
 	};
 
 	/* Data structures */
@@ -92,6 +93,19 @@ namespace Turbo
 		}
 
 		return VK_FALSE;
+	}
+
+	void SetResourceName(VkDevice device, VkObjectType type, u64 handle, const char* name)
+	{
+#if WITH_DEBUG_RENDERING_FEATURES
+		const VkDebugUtilsObjectNameInfoEXT nameInfo = {
+			.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+			.objectType = type,
+			.objectHandle = handle,
+			.pObjectName = name,
+		};
+		vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
+#endif // WITH_DEBUG_RENDERING_FEATURES
 	}
 
 	GPUDevice* GPUDevice::Create(Engine* engine)
@@ -385,11 +399,11 @@ namespace Turbo
 
 			Texture* texture = ctx->texturePool.Get(textureHandle);
 			*texture = {
-				.mFlags = ETexFlags::SwapChain,
-				.mFormat = EPixFormat::BGRA8srgb,
-				.mWidth = TruncToU16(swapchainExtent.width),
-				.mHeight = TruncToU16(swapchainExtent.height),
-				.mName = Name("SwapchainImage"),
+				.flags = ETexFlags::SwapChain,
+				.format = EPixFormat::BGRA8srgb,
+				.width = TruncToU16(swapchainExtent.width),
+				.height = TruncToU16(swapchainExtent.height),
+				.name = Name("SwapchainImage"),
 			};
 
 			IntTexture* intTexture = ctx->texturePool.GetInternal(textureHandle);
@@ -419,11 +433,88 @@ namespace Turbo
 		ctx->swapchainImages.Empty();
 	}
 
-	THandle<Texture> GPUDevice::CreateTexture(const TextureBuilder textureBuilder)
+	THandle<Texture> GPUDevice::CreateTexture(const TextureBuilder builder)
 	{
-		unimplemented();
-		return {};
+		THandle<Texture> handle = ctx->texturePool.Acquire();
+		Texture* texture = ctx->texturePool.Get(handle);
+		IntTexture* intTexture = ctx->texturePool.GetInternal(handle);
+		check(texture && intTexture);
+
+		*texture = {
+			.flags = builder.flags,
+			.format = builder.format,
+			.width = builder.width,
+			.height = builder.height,
+			.depth = builder.depth,
+			.numMips = builder.numMips,
+			.name = builder.name,
+		};
+		*intTexture = {};
+
+		/* Create Image */
+		VkImageUsageFlags imageFlags = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		imageFlags |= (builder.flags & ETexFlags::SampledImage) != 0 ? VK_IMAGE_USAGE_SAMPLED_BIT : 0;
+		imageFlags |= (builder.flags & ETexFlags::StorageImage) != 0 ? VK_IMAGE_USAGE_STORAGE_BIT : 0;
+
+		if ((builder.flags & ETexFlags::RenderTarget) != 0)
+		{
+			imageFlags |= HasDepthOrStencil(builder.format)
+				? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+				: VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		}
+
+		VkImageCreateInfo imageCI = {
+			.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+			.imageType = ToVkImageType(builder.type),
+			.format = ToVkFormat(builder.format),
+			.extent = {
+				.width = builder.width,
+				.height = builder.height,
+				.depth = builder.depth,
+			},
+			.mipLevels = builder.numMips,
+			.arrayLayers = 1,
+			.samples = VK_SAMPLE_COUNT_1_BIT,
+			.tiling = VK_IMAGE_TILING_OPTIMAL,
+			.usage = imageFlags,
+			.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED
+		};
+
+		VmaAllocationCreateInfo allocationCI = {
+			.usage = VMA_MEMORY_USAGE_AUTO,
+		};
+
+		VmaAllocationInfo allocationInfo = {};
+		vkCheck(vmaCreateImage(
+			ctx->vmaAllocator,
+			&imageCI,
+			&allocationCI,
+			&intTexture->vkImage,
+			&intTexture->vmaAllocation,
+			&allocationInfo
+		));
+		SetResourceName(ctx->vkDevice, VK_OBJECT_TYPE_IMAGE, (u64)intTexture->vkImage, texture->name.stringLookUp);
+
+		/* CreateImageView */
+		const VkImageViewCreateInfo imageViewCI = {
+			.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+			.image = intTexture->vkImage,
+			.viewType = ToVkImageViewType(builder.type),
+			.format = ToVkFormat(builder.format),
+			.subresourceRange = {
+				.aspectMask = HasDepthOrStencil(builder.format) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT,
+				.levelCount = builder.numMips,
+				.layerCount = 1
+			}
+		};
+		vkCheck(vkCreateImageView(ctx->vkDevice, &imageViewCI, nullptr, &intTexture->vkImageView));
+		SetResourceName(ctx->vkDevice, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)intTexture->vkImageView, texture->name.stringLookUp);
+
+		return handle;
 	}
+
 	Texture* GPUDevice::Access(THandle<Texture> handle) { return ctx->texturePool.Get(handle); }
+
 	void GPUDevice::Destroy(THandle<Texture> handle) { unimplemented(); }
 } // namespace Turbo

@@ -32,45 +32,82 @@ namespace Turbo
 
 		/* Depth-Stencil */
 		D32sfloat,
-
 	};
+
+	constexpr bool IsColor(EPixFormat format)
+	{
+		switch (format)
+		{
+		case EPixFormat::RGBA8unorm:
+		case EPixFormat::RGBA8srgb:
+		case EPixFormat::BGRA8srgb:
+			return true;
+		default:
+			break;
+		}
+
+		return false;
+	}
+
+	constexpr bool HasDepth(EPixFormat format)
+	{
+		switch (format)
+		{
+		case EPixFormat::D32sfloat:
+			return true;
+		default:
+			break;
+		}
+
+		return false;
+	}
+
+	constexpr bool HasStencil(EPixFormat format)
+	{
+		return false;
+	}
+
+	constexpr bool HasDepthOrStencil(EPixFormat format)
+	{
+		return HasDepth(format) || HasStencil(format);
+	}
 
 	struct TextureBuilder
 	{
-		u16 mWidth = 1;
-		u16 mHeight = 1;
-		u16 mDepth = 1;
-		u8 mNumMips = 1;
+		u16 width = 1;
+		u16 height = 1;
+		u16 depth = 1;
+		u8 numMips = 1;
 
-		ETexFlags mFlags = ETexFlags::None;
-		ETexType mType = ETexType::Texture2D;
-		EPixFormat mPixelFormat = EPixFormat::BGRA8srgb;
+		ETexFlags flags = ETexFlags::None;
+		ETexType type = ETexType::Texture2D;
+		EPixFormat format = EPixFormat::BGRA8srgb;
 
-		Name mName;
+		Name name;
 
 		inline static TextureBuilder Create2D(UVec2 size, EPixFormat format, ETexFlags flags, Name name)
 		{
 			return {
-				.mWidth = TruncToU16(size.x),
-				.mHeight = TruncToU16(size.y),
-				.mFlags = flags,
-				.mPixelFormat = format,
-				.mName = name
+				.width = TruncToU16(size.x),
+				.height = TruncToU16(size.y),
+				.flags = flags,
+				.format = format,
+				.name = name
 			};
 		}
 	};
 
 	struct Texture
 	{
-		ETexFlags mFlags = ETexFlags::None;
-		EPixFormat mFormat = EPixFormat::RGBA8srgb;
+		ETexFlags flags = ETexFlags::None;
+		EPixFormat format = EPixFormat::RGBA8srgb;
 
-		u16 mWidth = 1;
-		u16 mHeight = 1;
-		u16 mDepth = 1;
-		u8 mNumMips = 1;
+		u16 width = 1;
+		u16 height = 1;
+		u16 depth = 1;
+		u8 numMips = 1;
 
-		Name mName = Name::None();
+		Name name = Name::None();
 	};
 
 }
