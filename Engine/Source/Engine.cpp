@@ -17,13 +17,6 @@ namespace Turbo
 		TURBO_LOG(Log, "Initializing clocks. [RT: %luns, M: %luns]", GetRealTimeClockPrecision(), GetRelativeClockPrecision());
 		NameDB = String::InitNameDB(persistentMemory);
 
-		static Name TestName = {"TestName"};
-		static Name TestName2 = {"OtherTestName"};
-		static Name TestName_TheSame = {"TestName"};
-
-		check(TestName == TestName_TheSame);
-		check(TestName != TestName2);
-
 		platformContext = PlatformInit(persistentMemory);
 		check(platformContext);
 

@@ -38,6 +38,12 @@ namespace Turbo
 		VmaAllocation vmaAllocation = nullptr;
 	};
 
+	struct IntBuffer
+	{
+		VkBuffer vkBuffer = nullptr;
+		VmaAllocation vmaAllocation = nullptr;
+	};
+
 	/* Data structures */
 	struct PlatformRenderContext
 	{
@@ -61,6 +67,7 @@ namespace Turbo
 
 		/* Resources */
 		TResourcePool<Texture, IntTexture, Renderer::maxTextures> texturePool;
+		TResourcePool<Buffer, IntBuffer, Renderer::maxBuffers> bufferPool;
 	};
 
 	/* Functions and methods */
@@ -522,7 +529,66 @@ namespace Turbo
 		return handle;
 	}
 
+	THandle<Buffer> GPUDevice::CreateBuffer(const BufferBuilder builder)
+	{
+		THandle<Buffer> handle = ctx->bufferPool.Acquire();
+		Buffer* buffer = ctx->bufferPool.Get(handle);
+		IntBuffer* intBuffer = ctx->bufferPool.GetInternal(handle);
+		check(buffer && intBuffer);
+
+		*buffer = {
+			.flags = builder.flags,
+			.size = builder.size,
+			.name = builder.name,
+		};
+		*intBuffer = {};
+
+		VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
+		                          | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+		usage |= (builder.flags & EBufFlags::UniformBuffer)  != 0 ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT  : 0;
+		usage |= (builder.flags & EBufFlags::StorageBuffer)  != 0 ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT  : 0;
+		usage |= (builder.flags & EBufFlags::IndexBuffer)    != 0 ? VK_BUFFER_USAGE_INDEX_BUFFER_BIT    : 0;
+		usage |= (builder.flags & EBufFlags::IndirectBuffer) != 0 ? VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT : 0;
+
+		VkBufferCreateInfo bufferCI = {
+			.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+			.size = builder.size,
+			.usage = usage,
+		};
+
+		VmaAllocationCreateInfo allocationCI = {
+			.usage = VMA_MEMORY_USAGE_AUTO,
+		};
+		allocationCI.flags |=
+			(builder.flags & EBufFlags::CreateMapped) != 0
+			? (VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT)
+			: 0;
+
+		VmaAllocationInfo allocationInfo = {};
+		vkCheck(vmaCreateBuffer(
+			ctx->vmaAllocator,
+			&bufferCI,
+			&allocationCI,
+			&intBuffer->vkBuffer,
+			&intBuffer->vmaAllocation,
+			&allocationInfo
+		));
+		SetResourceName(ctx->vkDevice, VK_OBJECT_TYPE_BUFFER, (u64)intBuffer->vkBuffer, builder.name.stringLookUp);
+
+		buffer->mappedAddress = allocationInfo.pMappedData;
+
+		const VkBufferDeviceAddressInfo deviceAddressInfo = {
+			.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
+			.buffer = intBuffer->vkBuffer,
+		};
+		buffer->bindlessIndex = vkGetBufferDeviceAddress(ctx->vkDevice, &deviceAddressInfo);
+
+		return handle;
+	}
+
 	Texture* GPUDevice::Access(THandle<Texture> handle) { return ctx->texturePool.Get(handle); }
+	Buffer* GPUDevice::Access(THandle<Buffer> handle) { return ctx->bufferPool.Get(handle); }
 
 	void GPUDevice::Destroy(THandle<Texture> handle) { unimplemented(); }
+	void GPUDevice::Destroy(THandle<Buffer> handle) { unimplemented(); }
 } // namespace Turbo

@@ -10,8 +10,11 @@ namespace Turbo
 	namespace Renderer
 	{
 		constexpr static u32 maxTextures = 1024;
+		constexpr static u32 maxBuffers  = 16 * 1024;
 
 		constexpr static u32 maxFramesInFlight = 3;
+
+		constexpr static DeviceSize maxUniformBufferSize = 64 * TE_KIBI;
 	}
 
 	struct GPUDevice
@@ -33,10 +36,13 @@ namespace Turbo
 		UVec2 GetSurfaceSize();
 
 		/* Resource management */
-		THandle<Texture> CreateTexture(const TextureBuilder textureBuilder);
+		THandle<Texture> CreateTexture(const TextureBuilder builder);
+		THandle<Buffer> CreateBuffer(const BufferBuilder builder);
 
 		Texture* Access(THandle<Texture> handle);
+		Buffer* Access(THandle<Buffer> handle);
 
 		void Destroy(THandle<Texture> handle);
+		void Destroy(THandle<Buffer> handle);
 	};
 } // namespace Turbo
