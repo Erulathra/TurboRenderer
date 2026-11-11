@@ -6,7 +6,7 @@ set(SOURCE_FILES
 	Source/String.cpp
 	Source/Graphics.cpp
 
-	Source/Renderer/Renderer.cpp
+	Source/Renderer/VulkanRenderer.cpp
 	Source/Renderer/VulkanHelpers.cpp
 )
 

@@ -6,6 +6,7 @@
 namespace Turbo
 {
 	struct Engine;
+	struct CommandBuffer;
 
 	namespace Renderer
 	{
@@ -15,6 +16,8 @@ namespace Turbo
 		constexpr static u32 maxFramesInFlight = 3;
 
 		constexpr static DeviceSize maxUniformBufferSize = 64 * TE_KIBI;
+
+		constexpr static u64 gpuTimeOut = 1 * TE_INV_NANO;
 	}
 
 	struct GPUDevice
@@ -28,7 +31,12 @@ namespace Turbo
 		void Shutdown(Engine* engine);
 
 		/* Common API */
+		CommandBuffer GetFrameCommandBuffer();
 		void WaitGPUIdle();
+
+		/* Frame to frame rendering */
+		void BeginRenderFrame();
+		void EndRenderFrame();
 
 		/* Swapchain */
 		void CreateSwapchain(PlatformContext* platformCtx);
@@ -44,5 +52,13 @@ namespace Turbo
 
 		void Destroy(THandle<Texture> handle);
 		void Destroy(THandle<Buffer> handle);
+	};
+
+	struct CommandBuffer
+	{
+		/* Platform specific context. Hidden under abstraction. */
+		void* context;
+
+		/* API */
 	};
 } // namespace Turbo

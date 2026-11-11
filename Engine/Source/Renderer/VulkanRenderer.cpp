@@ -20,7 +20,11 @@
 #define WITH_DEBUG_RENDERING_FEATURES TURBO_DEVELOPMENT
 
 /* Macros */
-#define ctx (static_cast<PlatformRenderContext*>(context))
+#define gpuCtx (static_cast<DeviceContext*>(context))
+#define GetGpuCtx(CONTEXT) (static_cast<DeviceContext*>(CONTEXT))
+#define cmdCtx (static_cast<CommandBufferContext*>(context))
+#define GetCmdCtx(CONTEXT) (static_cast<CommandBufferContext*>(CONTEXT))
+
 #define vkCheck(EXPRESSION)                                                                                            \
 	do                                                                                                                  \
 	{                                                                                                                   \
@@ -30,7 +34,10 @@
 
 namespace Turbo
 {
-	/* Internal resource data */
+	// ##################################################################################
+	//                              Internal Resource Data
+	// ##################################################################################
+
 	struct IntTexture
 	{
 		VkImage vkImage = nullptr;
@@ -44,15 +51,18 @@ namespace Turbo
 		VmaAllocation vmaAllocation = nullptr;
 	};
 
-	/* Data structures */
-	struct PlatformRenderContext
+	// ##################################################################################
+	//                             Internal Data structures
+	// ##################################################################################
+
+	struct DeviceContext
 	{
 		VkInstance vkInstance = nullptr;
 		VkPhysicalDevice vkPhysicalDevice = nullptr;
 		VkDevice vkDevice = nullptr;
 
 		u32 graphicsQueueFamily = 0;
-		VkQueue graphicsQueue = nullptr;
+		VkQueue vkGraphicsQueue = nullptr;
 
 		VkSurfaceKHR vkSurface = nullptr;
 		VkSwapchainKHR vkSwapchain = nullptr;
@@ -65,12 +75,31 @@ namespace Turbo
 		VkDebugUtilsMessengerEXT vkDebugUtilsMessenger = nullptr;
 #endif // WITH_DEBUG_RENDERING_FEATURES
 
+		/* Frame in flight */
+		u64 frameIdx = 0;
+		u64 frameInFlightIdx = 0;
+		u32 swapChainImageIdx = 0;
+
+		VkCommandPool vkCommandPool = nullptr;
+		CommandBuffer commandBuffers[Renderer::maxFramesInFlight];
+		VkFence vkFences[Renderer::maxFramesInFlight];
+		VkSemaphore vkImageAcquireSemaphores[Renderer::maxFramesInFlight];
+		VkSemaphore vkRenderCompleteSemaphores[Renderer::maxFramesInFlight];
+
 		/* Resources */
 		TResourcePool<Texture, IntTexture, Renderer::maxTextures> texturePool;
 		TResourcePool<Buffer, IntBuffer, Renderer::maxBuffers> bufferPool;
 	};
 
-	/* Functions and methods */
+	struct CommandBufferContext
+	{
+		VkCommandBuffer vkCmd = nullptr;
+	};
+
+	// ##################################################################################
+	//                                 Helper Functions
+	// ##################################################################################
+
 	VkBool32 DebugUtilsMessengerCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT severity,
 		VkDebugUtilsMessageTypeFlagsEXT type,
@@ -78,8 +107,6 @@ namespace Turbo
 		void* userData
 	)
 	{
-		// TODO(SS): add type flags to message after implementing string library.
-
 		MakeStaticArena(stringArena, 1024);
 		StringView typeString = FlagsToString(stringArena, type);
 
@@ -115,6 +142,30 @@ namespace Turbo
 #endif // WITH_DEBUG_RENDERING_FEATURES
 	}
 
+	CommandBuffer CreateCommandBuffer(Arena& arena, GPUDevice* gpu)
+	{
+		CommandBuffer result = {};
+		result.context = arena.Allocate<CommandBufferContext>();
+
+		DeviceContext* gpuContext = GetGpuCtx(gpu->context);
+		CommandBufferContext* cmdContext = GetCmdCtx(result.context);
+
+		const VkCommandBufferAllocateInfo commandBufferAI = {
+			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+			.commandPool = gpuContext->vkCommandPool,
+			.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+			.commandBufferCount = 1,
+		};
+
+		vkCheck(vkAllocateCommandBuffers(gpuContext->vkDevice, &commandBufferAI, &cmdContext->vkCmd));
+
+		return result;
+	}
+
+	// ##################################################################################
+	//                                    GPUDevice
+	// ##################################################################################
+
 	GPUDevice* GPUDevice::Create(Engine* engine)
 	{
 		return engine->persistentMemory.Allocate<GPUDevice>();
@@ -122,8 +173,8 @@ namespace Turbo
 
 	void GPUDevice::Init(Engine* engine)
 	{
-		context = engine->persistentMemory.Allocate<PlatformRenderContext>();
-		ctx->texturePool.Init();
+		context = engine->persistentMemory.Allocate<DeviceContext>();
+		gpuCtx->texturePool.Init();
 
 		/* Create vulkan instance */
 		{
@@ -161,8 +212,8 @@ namespace Turbo
 				.ppEnabledExtensionNames = instanceExtensions.data,
 			};
 
-			vkCheck(vkCreateInstance(&instanceCI, nullptr, &ctx->vkInstance));
-			volkLoadInstance(ctx->vkInstance);
+			vkCheck(vkCreateInstance(&instanceCI, nullptr, &gpuCtx->vkInstance));
+			volkLoadInstance(gpuCtx->vkInstance);
 			TURBO_LOG(Log, "Vulkan instance created.");
 
 #if WITH_DEBUG_RENDERING_FEATURES
@@ -180,10 +231,10 @@ namespace Turbo
 			};
 
 			vkCheck(vkCreateDebugUtilsMessengerEXT(
-				ctx->vkInstance,
+				gpuCtx->vkInstance,
 				&debugUtilsMessengerCI,
 				nullptr,
-				&ctx->vkDebugUtilsMessenger
+				&gpuCtx->vkDebugUtilsMessenger
 			));
 
 			TURBO_LOG(Log, "Debug messenger created.");
@@ -194,10 +245,10 @@ namespace Turbo
 		{
 			u32 deviceCount = 4;
 			VkPhysicalDevice physicalDevices[deviceCount];
-			vkCheck(vkEnumeratePhysicalDevices(ctx->vkInstance, &deviceCount, physicalDevices));
+			vkCheck(vkEnumeratePhysicalDevices(gpuCtx->vkInstance, &deviceCount, physicalDevices));
 			verify(deviceCount > 0);
 
-			ctx->vkPhysicalDevice = physicalDevices[0];
+			gpuCtx->vkPhysicalDevice = physicalDevices[0];
 
 			VkPhysicalDevice discreteGPU = nullptr;
 			VkPhysicalDevice integratedGPU = nullptr;
@@ -222,15 +273,15 @@ namespace Turbo
 
 			if (discreteGPU)
 			{
-				ctx->vkPhysicalDevice = discreteGPU;
+				gpuCtx->vkPhysicalDevice = discreteGPU;
 			}
 			else if (integratedGPU)
 			{
-				ctx->vkPhysicalDevice = integratedGPU;
+				gpuCtx->vkPhysicalDevice = integratedGPU;
 			}
 
 			VkPhysicalDeviceProperties2 deviceProperties = {.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
-			vkGetPhysicalDeviceProperties2(ctx->vkPhysicalDevice, &deviceProperties);
+			vkGetPhysicalDeviceProperties2(gpuCtx->vkPhysicalDevice, &deviceProperties);
 
 			TURBO_LOG(Log, "Selected device: %s", deviceProperties.properties.deviceName);
 		}
@@ -239,7 +290,7 @@ namespace Turbo
 		{
 			u32 numQueueFamilies = 16;
 			VkQueueFamilyProperties queueFamilyProperties[numQueueFamilies];
-			vkGetPhysicalDeviceQueueFamilyProperties(ctx->vkPhysicalDevice, &numQueueFamilies, queueFamilyProperties);
+			vkGetPhysicalDeviceQueueFamilyProperties(gpuCtx->vkPhysicalDevice, &numQueueFamilies, queueFamilyProperties);
 
 			bool queueFamilyFound = false;
 
@@ -248,16 +299,16 @@ namespace Turbo
 				const VkQueueFamilyProperties& queueFamilyProps = queueFamilyProperties[i];
 				if (queueFamilyProps.queueFlags & VK_QUEUE_GRAPHICS_BIT)
 				{
-					ctx->graphicsQueueFamily = i;
+					gpuCtx->graphicsQueueFamily = i;
 					queueFamilyFound = true;
 					break;
 				}
 			}
 			verify(queueFamilyFound);
 			verify(GetPhysicalDevicePresentationSupport(
-				ctx->vkInstance,
-				ctx->vkPhysicalDevice,
-				ctx->graphicsQueueFamily
+				gpuCtx->vkInstance,
+				gpuCtx->vkPhysicalDevice,
+				gpuCtx->graphicsQueueFamily
 			));
 		}
 
@@ -268,7 +319,7 @@ namespace Turbo
 			const float queuePriorities[] = {1.f};
 			const VkDeviceQueueCreateInfo queueCI = {
 				.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-				.queueFamilyIndex = ctx->graphicsQueueFamily,
+				.queueFamilyIndex = gpuCtx->graphicsQueueFamily,
 				.queueCount = arrayLen(queuePriorities),
 				.pQueuePriorities = queuePriorities,
 			};
@@ -303,26 +354,26 @@ namespace Turbo
 				.pEnabledFeatures = &vk10Features
 			};
 
-			vkCheck(vkCreateDevice(ctx->vkPhysicalDevice, &deviceCI, nullptr, &ctx->vkDevice));
-			volkLoadDevice(ctx->vkDevice);
+			vkCheck(vkCreateDevice(gpuCtx->vkPhysicalDevice, &deviceCI, nullptr, &gpuCtx->vkDevice));
+			volkLoadDevice(gpuCtx->vkDevice);
 
-			vkGetDeviceQueue(ctx->vkDevice, ctx->graphicsQueueFamily, 0, &ctx->graphicsQueue);
+			vkGetDeviceQueue(gpuCtx->vkDevice, gpuCtx->graphicsQueueFamily, 0, &gpuCtx->vkGraphicsQueue);
 
 			TURBO_LOG(Log, "Vulkan logical device created.");
 		}
 
 		/* Obtain Surface */
 		{
-			vkCheck((VkResult)GetVulkanSurface(engine->platformContext, ctx->vkInstance, ctx->vkSurface));
+			vkCheck((VkResult)GetVulkanSurface(engine->platformContext, gpuCtx->vkInstance, gpuCtx->vkSurface));
 		}
 
 		/* Init VMA */
 		{
 			VmaAllocatorCreateInfo createInfo = {
 				.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
-				.physicalDevice = ctx->vkPhysicalDevice,
-				.device = ctx->vkDevice,
-				.instance = ctx->vkInstance,
+				.physicalDevice = gpuCtx->vkPhysicalDevice,
+				.device = gpuCtx->vkDevice,
+				.instance = gpuCtx->vkInstance,
 				.vulkanApiVersion = VK_API_VERSION_1_3,
 			};
 
@@ -330,8 +381,36 @@ namespace Turbo
 			vmaImportVulkanFunctionsFromVolk(&createInfo, &vmaVulkanFunctions);
 			createInfo.pVulkanFunctions = &vmaVulkanFunctions;
 
-			vkCheck(vmaCreateAllocator(&createInfo, &ctx->vmaAllocator));
+			vkCheck(vmaCreateAllocator(&createInfo, &gpuCtx->vmaAllocator));
 			TURBO_LOG(Log, "VMA Allocator created.");
+		}
+
+		/* Init per frame in flight data */
+		{
+			const VkCommandPoolCreateInfo commandPoolCI = {
+				.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+				.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+			};
+
+			vkCheck(vkCreateCommandPool(gpuCtx->vkDevice, &commandPoolCI, nullptr, &gpuCtx->vkCommandPool));
+
+			const VkFenceCreateInfo fenceCI = {
+				.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+				.flags = VK_FENCE_CREATE_SIGNALED_BIT,
+			};
+
+			const VkSemaphoreCreateInfo semaphoreCI = {
+				.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+			};
+
+			for (u32 i = 0; i < Renderer::maxFramesInFlight; ++i)
+			{
+				vkCheck(vkCreateFence(gpuCtx->vkDevice, &fenceCI, nullptr, &gpuCtx->vkFences[i]));
+				vkCheck(vkCreateSemaphore(gpuCtx->vkDevice, &semaphoreCI, nullptr, &gpuCtx->vkImageAcquireSemaphores[i]));
+				vkCheck(vkCreateSemaphore(gpuCtx->vkDevice, &semaphoreCI, nullptr, &gpuCtx->vkRenderCompleteSemaphores[i]));
+
+				gpuCtx->commandBuffers[i] = CreateCommandBuffer(engine->persistentMemory, this);
+			}
 		}
 	}
 
@@ -339,29 +418,109 @@ namespace Turbo
 	{
 		WaitGPUIdle();
 
+		/* Destroy per frame data */
+		for (u32 i = 0; i < Renderer::maxFramesInFlight; ++i)
+		{
+			vkDestroyFence(gpuCtx->vkDevice, gpuCtx->vkFences[i], nullptr);
+			vkDestroySemaphore(gpuCtx->vkDevice, gpuCtx->vkImageAcquireSemaphores[i], nullptr);
+			vkDestroySemaphore(gpuCtx->vkDevice, gpuCtx->vkRenderCompleteSemaphores[i], nullptr);
+		}
+		vkDestroyCommandPool(gpuCtx->vkDevice, gpuCtx->vkCommandPool, nullptr);
+
 		DestroySwapchain();
 
-		vkDestroySurfaceKHR(ctx->vkInstance, ctx->vkSurface, nullptr);
+		vkDestroySurfaceKHR(gpuCtx->vkInstance, gpuCtx->vkSurface, nullptr);
 
-		vmaDestroyAllocator(ctx->vmaAllocator);
+		vmaDestroyAllocator(gpuCtx->vmaAllocator);
 
-		vkDestroyDevice(ctx->vkDevice, nullptr);
+		vkDestroyDevice(gpuCtx->vkDevice, nullptr);
 
 #if WITH_DEBUG_RENDERING_FEATURES
-		vkDestroyDebugUtilsMessengerEXT(ctx->vkInstance, ctx->vkDebugUtilsMessenger, nullptr);
+		vkDestroyDebugUtilsMessengerEXT(gpuCtx->vkInstance, gpuCtx->vkDebugUtilsMessenger, nullptr);
 #endif // WITH_DEBUG_RENDERING_FEATURES
 
-		vkDestroyInstance(ctx->vkInstance, nullptr);
+		vkDestroyInstance(gpuCtx->vkInstance, nullptr);
 	}
 
-	void GPUDevice::WaitGPUIdle() { vkCheck(vkDeviceWaitIdle(ctx->vkDevice)); }
+	void GPUDevice::WaitGPUIdle() { vkCheck(vkDeviceWaitIdle(gpuCtx->vkDevice)); }
+
+	void GPUDevice::BeginRenderFrame()
+	{
+		/* Wait for and reset gpu fence */
+		vkCheck(vkWaitForFences(
+			gpuCtx->vkDevice,
+			1, &gpuCtx->vkFences[gpuCtx->frameInFlightIdx],
+			VK_TRUE,
+			Renderer::gpuTimeOut
+		));
+		vkCheck(vkResetFences(gpuCtx->vkDevice, 1, &gpuCtx->vkFences[gpuCtx->frameInFlightIdx]));
+
+		/* Acquire swapchain image */
+		vkCheck(vkAcquireNextImageKHR(
+			gpuCtx->vkDevice,
+			gpuCtx->vkSwapchain,
+			Renderer::gpuTimeOut,
+			gpuCtx->vkImageAcquireSemaphores[gpuCtx->frameInFlightIdx],
+			VK_NULL_HANDLE,
+			&gpuCtx->swapChainImageIdx
+		));
+		// TODO(SS): Handle VK_ERROR_OUT_OF_DATE_KHR
+	}
+
+	void GPUDevice::EndRenderFrame()
+	{
+		/* Submit frame's command buffer */
+		const VkSemaphoreSubmitInfo waitSemaphoreInfo = {
+			.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+			.semaphore = gpuCtx->vkImageAcquireSemaphores[gpuCtx->frameInFlightIdx],
+			.stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+		};
+
+		CommandBufferContext* cmdContext = GetCmdCtx(gpuCtx->commandBuffers[gpuCtx->frameInFlightIdx].context);
+		const VkCommandBufferSubmitInfo cmdSubmitInfo = {
+			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+			.commandBuffer = cmdContext->vkCmd,
+		};
+
+		const VkSemaphoreSubmitInfo signalSemaphoreInfo = {
+			.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+			.semaphore = gpuCtx->vkRenderCompleteSemaphores[gpuCtx->swapChainImageIdx],
+			.stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+		};
+
+		const VkSubmitInfo2 submitInfo = {
+			.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
+			.waitSemaphoreInfoCount = 1,
+			.pWaitSemaphoreInfos = &waitSemaphoreInfo,
+			.commandBufferInfoCount = 1,
+			.pCommandBufferInfos = &cmdSubmitInfo,
+			.signalSemaphoreInfoCount = 1,
+			.pSignalSemaphoreInfos = &signalSemaphoreInfo,
+		};
+		vkCheck(vkQueueSubmit2(gpuCtx->vkGraphicsQueue, 1, &submitInfo, gpuCtx->vkFences[gpuCtx->frameInFlightIdx]));
+
+		/* Present Image */
+		const VkPresentInfoKHR presentInfo = {
+			.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+			.waitSemaphoreCount = 1,
+			.pWaitSemaphores = &gpuCtx->vkRenderCompleteSemaphores[gpuCtx->swapChainImageIdx],
+			.swapchainCount = 1,
+			.pSwapchains = &gpuCtx->vkSwapchain,
+			.pImageIndices = &gpuCtx->swapChainImageIdx,
+		};
+		vkCheck(vkQueuePresentKHR(gpuCtx->vkGraphicsQueue, &presentInfo));
+
+		/* Bump frame idx */
+		++gpuCtx->frameIdx;
+		gpuCtx->frameInFlightIdx = gpuCtx->frameIdx % Renderer::maxFramesInFlight;
+	}
 
 	void GPUDevice::CreateSwapchain(PlatformContext* platformCtx)
 	{
 		VkSurfaceCapabilitiesKHR vkSurfaceCapabilities;
 		vkCheck(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-			ctx->vkPhysicalDevice,
-			ctx->vkSurface,
+			gpuCtx->vkPhysicalDevice,
+			gpuCtx->vkSurface,
 			&vkSurfaceCapabilities
 		));
 
@@ -378,7 +537,7 @@ namespace Turbo
 
 		const VkSwapchainCreateInfoKHR swapchainCI = {
 			.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-			.surface = ctx->vkSurface,
+			.surface = gpuCtx->vkSurface,
 			.minImageCount = vkSurfaceCapabilities.minImageCount,
 			.imageFormat = swapchainFormat,
 			.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
@@ -389,22 +548,22 @@ namespace Turbo
 			.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
 			.presentMode = presentMode
 		};
-		vkCheck(vkCreateSwapchainKHR(ctx->vkDevice, &swapchainCI, nullptr, &ctx->vkSwapchain));
+		vkCheck(vkCreateSwapchainKHR(gpuCtx->vkDevice, &swapchainCI, nullptr, &gpuCtx->vkSwapchain));
 
 		/* Obtain swapchain images */
 		u32 imagesCount = Renderer::maxFramesInFlight;
 		VkImage swapchainImages[Renderer::maxFramesInFlight];
-		vkCheck(vkGetSwapchainImagesKHR(ctx->vkDevice, ctx->vkSwapchain, &imagesCount, swapchainImages));
+		vkCheck(vkGetSwapchainImagesKHR(gpuCtx->vkDevice, gpuCtx->vkSwapchain, &imagesCount, swapchainImages));
 
 		for (u32 i = 0; i < imagesCount; ++i)
 		{
 			/* Create abstraction */
-			const THandle<Texture> textureHandle = ctx->texturePool.Acquire();
+			const THandle<Texture> textureHandle = gpuCtx->texturePool.Acquire();
 			check(textureHandle);
 
-			ctx->swapchainImages.Push(textureHandle);
+			gpuCtx->swapchainImages.Push(textureHandle);
 
-			Texture* texture = ctx->texturePool.Get(textureHandle);
+			Texture* texture = gpuCtx->texturePool.Get(textureHandle);
 			*texture = {
 				.flags = ETexFlags::SwapChain,
 				.format = EPixFormat::BGRA8srgb,
@@ -413,7 +572,7 @@ namespace Turbo
 				.name = Name("SwapchainImage"),
 			};
 
-			IntTexture* intTexture = ctx->texturePool.GetInternal(textureHandle);
+			IntTexture* intTexture = gpuCtx->texturePool.GetInternal(textureHandle);
 			*intTexture = {
 				.vkImage = swapchainImages[i],
 			};
@@ -424,35 +583,35 @@ namespace Turbo
 
 	void GPUDevice::DestroySwapchain()
 	{
-		if (ctx->vkSwapchain)
+		if (gpuCtx->vkSwapchain)
 		{
-			vkDestroySwapchainKHR(ctx->vkDevice, ctx->vkSwapchain, nullptr);
-			ctx->vkSwapchain = nullptr;
+			vkDestroySwapchainKHR(gpuCtx->vkDevice, gpuCtx->vkSwapchain, nullptr);
+			gpuCtx->vkSwapchain = nullptr;
 		}
 
-		for (THandle<Texture> handle : ctx->swapchainImages)
+		for (THandle<Texture> handle : gpuCtx->swapchainImages)
 		{
-			IntTexture* intTexture = ctx->texturePool.GetInternal(handle);
-			vkDestroyImageView(ctx->vkDevice, intTexture->vkImageView, nullptr);
+			IntTexture* intTexture = gpuCtx->texturePool.GetInternal(handle);
+			vkDestroyImageView(gpuCtx->vkDevice, intTexture->vkImageView, nullptr);
 
-			ctx->texturePool.Release(handle);
+			gpuCtx->texturePool.Release(handle);
 		}
-		ctx->swapchainImages.Empty();
+		gpuCtx->swapchainImages.Empty();
 	}
 
 	UVec2 GPUDevice::GetSurfaceSize()
 	{
-		check(ctx->swapchainImages.size > 0);
-		Texture* texture = Access(ctx->swapchainImages.First());
+		check(gpuCtx->swapchainImages.size > 0);
+		Texture* texture = Access(gpuCtx->swapchainImages.First());
 
 		return {texture->width, texture->height};
 	}
 
 	THandle<Texture> GPUDevice::CreateTexture(const TextureBuilder builder)
 	{
-		THandle<Texture> handle = ctx->texturePool.Acquire();
-		Texture* texture = ctx->texturePool.Get(handle);
-		IntTexture* intTexture = ctx->texturePool.GetInternal(handle);
+		THandle<Texture> handle = gpuCtx->texturePool.Acquire();
+		Texture* texture = gpuCtx->texturePool.Get(handle);
+		IntTexture* intTexture = gpuCtx->texturePool.GetInternal(handle);
 		check(texture && intTexture);
 
 		*texture = {
@@ -502,14 +661,14 @@ namespace Turbo
 
 		VmaAllocationInfo allocationInfo = {};
 		vkCheck(vmaCreateImage(
-			ctx->vmaAllocator,
+			gpuCtx->vmaAllocator,
 			&imageCI,
 			&allocationCI,
 			&intTexture->vkImage,
 			&intTexture->vmaAllocation,
 			&allocationInfo
 		));
-		SetResourceName(ctx->vkDevice, VK_OBJECT_TYPE_IMAGE, (u64)intTexture->vkImage, texture->name.stringLookUp);
+		SetResourceName(gpuCtx->vkDevice, VK_OBJECT_TYPE_IMAGE, (u64)intTexture->vkImage, texture->name.stringLookUp);
 
 		/* CreateImageView */
 		const VkImageViewCreateInfo imageViewCI = {
@@ -523,17 +682,17 @@ namespace Turbo
 				.layerCount = 1
 			}
 		};
-		vkCheck(vkCreateImageView(ctx->vkDevice, &imageViewCI, nullptr, &intTexture->vkImageView));
-		SetResourceName(ctx->vkDevice, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)intTexture->vkImageView, texture->name.stringLookUp);
+		vkCheck(vkCreateImageView(gpuCtx->vkDevice, &imageViewCI, nullptr, &intTexture->vkImageView));
+		SetResourceName(gpuCtx->vkDevice, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)intTexture->vkImageView, texture->name.stringLookUp);
 
 		return handle;
 	}
 
 	THandle<Buffer> GPUDevice::CreateBuffer(const BufferBuilder builder)
 	{
-		THandle<Buffer> handle = ctx->bufferPool.Acquire();
-		Buffer* buffer = ctx->bufferPool.Get(handle);
-		IntBuffer* intBuffer = ctx->bufferPool.GetInternal(handle);
+		THandle<Buffer> handle = gpuCtx->bufferPool.Acquire();
+		Buffer* buffer = gpuCtx->bufferPool.Get(handle);
+		IntBuffer* intBuffer = gpuCtx->bufferPool.GetInternal(handle);
 		check(buffer && intBuffer);
 
 		*buffer = {
@@ -566,14 +725,14 @@ namespace Turbo
 
 		VmaAllocationInfo allocationInfo = {};
 		vkCheck(vmaCreateBuffer(
-			ctx->vmaAllocator,
+			gpuCtx->vmaAllocator,
 			&bufferCI,
 			&allocationCI,
 			&intBuffer->vkBuffer,
 			&intBuffer->vmaAllocation,
 			&allocationInfo
 		));
-		SetResourceName(ctx->vkDevice, VK_OBJECT_TYPE_BUFFER, (u64)intBuffer->vkBuffer, builder.name.stringLookUp);
+		SetResourceName(gpuCtx->vkDevice, VK_OBJECT_TYPE_BUFFER, (u64)intBuffer->vkBuffer, builder.name.stringLookUp);
 
 		buffer->mappedAddress = allocationInfo.pMappedData;
 
@@ -581,14 +740,19 @@ namespace Turbo
 			.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
 			.buffer = intBuffer->vkBuffer,
 		};
-		buffer->bindlessIndex = vkGetBufferDeviceAddress(ctx->vkDevice, &deviceAddressInfo);
+		buffer->bindlessIndex = vkGetBufferDeviceAddress(gpuCtx->vkDevice, &deviceAddressInfo);
 
 		return handle;
 	}
 
-	Texture* GPUDevice::Access(THandle<Texture> handle) { return ctx->texturePool.Get(handle); }
-	Buffer* GPUDevice::Access(THandle<Buffer> handle) { return ctx->bufferPool.Get(handle); }
+	Texture* GPUDevice::Access(THandle<Texture> handle) { return gpuCtx->texturePool.Get(handle); }
+	Buffer* GPUDevice::Access(THandle<Buffer> handle) { return gpuCtx->bufferPool.Get(handle); }
 
 	void GPUDevice::Destroy(THandle<Texture> handle) { unimplemented(); }
 	void GPUDevice::Destroy(THandle<Buffer> handle) { unimplemented(); }
+
+	// ##################################################################################
+	//                                Command buffer
+	// ##################################################################################
+
 } // namespace Turbo

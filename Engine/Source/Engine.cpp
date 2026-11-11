@@ -45,6 +45,11 @@ namespace Turbo
 	{
 		PlatformTick(platformContext, this);
 
+		// NOTE(SS): For now we are rendering on the main thread.
+		gpu->BeginRenderFrame();
+
+		gpu->EndRenderFrame();
+
 		return shouldTick;
 	}
 
