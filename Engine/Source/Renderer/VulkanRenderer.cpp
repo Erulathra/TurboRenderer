@@ -162,6 +162,24 @@ namespace Turbo
 		return result;
 	}
 
+	void BeginCommandBuffer(CommandBuffer& commandBuffer)
+	{
+		CommandBufferContext* cmdContext = GetCmdCtx(commandBuffer.context);
+		vkCheck(vkResetCommandBuffer(cmdContext->vkCmd, 0));
+
+		const VkCommandBufferBeginInfo beginInfo = {
+			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+			.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+		};
+		vkCheck(vkBeginCommandBuffer(cmdContext->vkCmd, &beginInfo));
+	}
+
+	void EndCommandBuffer(CommandBuffer& commandBuffer)
+	{
+		CommandBufferContext* cmdContext = GetCmdCtx(commandBuffer.context);
+		vkCheck(vkEndCommandBuffer(cmdContext->vkCmd));
+	}
+
 	// ##################################################################################
 	//                                    GPUDevice
 	// ##################################################################################
@@ -456,6 +474,7 @@ namespace Turbo
 		vkCheck(vkResetFences(gpuCtx->vkDevice, 1, &gpuCtx->vkFences[gpuCtx->frameInFlightIdx]));
 
 		/* Acquire swapchain image */
+		// TODO(SS): Handle VK_ERROR_OUT_OF_DATE_KHR
 		vkCheck(vkAcquireNextImageKHR(
 			gpuCtx->vkDevice,
 			gpuCtx->vkSwapchain,
@@ -464,11 +483,14 @@ namespace Turbo
 			VK_NULL_HANDLE,
 			&gpuCtx->swapChainImageIdx
 		));
-		// TODO(SS): Handle VK_ERROR_OUT_OF_DATE_KHR
+
+		BeginCommandBuffer(gpuCtx->commandBuffers[gpuCtx->frameInFlightIdx]);
 	}
 
 	void GPUDevice::EndRenderFrame()
 	{
+		EndCommandBuffer(gpuCtx->commandBuffers[gpuCtx->frameInFlightIdx]);
+
 		/* Submit frame's command buffer */
 		const VkSemaphoreSubmitInfo waitSemaphoreInfo = {
 			.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
