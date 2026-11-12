@@ -1,7 +1,7 @@
 #pragma once
 
 #include "DataStructures/Handle.h"
-#include "Renderer/Resources.h"
+#include "Renderer/RendererHelpers.h"
 
 namespace Turbo
 {

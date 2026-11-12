@@ -2,7 +2,7 @@
 
 #include "volk.h"
 
-#include "Renderer/Resources.h"
+#include "Renderer/RendererHelpers.h"
 
 #include "String.h"
 #include "DataStructures/Arena.h"
