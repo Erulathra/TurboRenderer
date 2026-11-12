@@ -60,4 +60,8 @@ namespace Turbo
 
 		return VK_IMAGE_VIEW_TYPE_2D;
 	}
+
+	void FindStageAccess(EBufState state, VkPipelineStageFlagBits2& outStage, VkAccessFlagBits2& outAccess);
+	void FindStageAccess(ETexState state, EPixFormat format, VkPipelineStageFlagBits2& outStage, VkAccessFlagBits2& outAccess);
+	VkImageLayout FindLayout(ETexState state, EPixFormat format);
 }

@@ -57,8 +57,11 @@ namespace Turbo
 	struct CommandBuffer
 	{
 		/* Platform specific context. Hidden under abstraction. */
+		GPUDevice* gpu;
 		void* context;
 
 		/* API */
+		void BufferBarrier(const BufferBarrierInfo& barrier);
+		void TextureBarrier(const TextureBarrierInfo& barrier);
 	};
 } // namespace Turbo

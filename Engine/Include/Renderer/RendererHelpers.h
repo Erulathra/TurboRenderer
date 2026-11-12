@@ -97,6 +97,9 @@ namespace Turbo
 
 		AllShaderResource = AllUniform | AllSRV | AllUAV,
 
+		ShaderRead = AllUniform | AllSRV,
+		ShaderWrite = AllWrite & AllShaderResource,
+
 		All = AllRead | AllWrite
 	};
 	DEFINE_ENUM_OPERATORS(EBufState);

@@ -145,6 +145,7 @@ namespace Turbo
 	CommandBuffer CreateCommandBuffer(Arena& arena, GPUDevice* gpu)
 	{
 		CommandBuffer result = {};
+		result.gpu = gpu;
 		result.context = arena.Allocate<CommandBufferContext>();
 
 		DeviceContext* gpuContext = GetGpuCtx(gpu->context);
@@ -777,4 +778,71 @@ namespace Turbo
 	//                                Command buffer
 	// ##################################################################################
 
+	void CommandBuffer::BufferBarrier(const BufferBarrierInfo& barrier)
+	{
+		VkPipelineStageFlags2 srcStageMask = {};
+		VkAccessFlags2 srcAccessMask = {};
+		VkPipelineStageFlags2 dstStageMask = {};
+		VkAccessFlags2 dstAccessMask = {};
+
+		FindStageAccess(barrier.oldUsage, srcStageMask, srcAccessMask);
+		FindStageAccess(barrier.newUsage, dstStageMask, dstAccessMask);
+
+		const VkMemoryBarrier2 memoryBarrier = {
+			.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+			.srcStageMask = srcStageMask,
+			.srcAccessMask = srcAccessMask,
+			.dstStageMask = dstStageMask,
+			.dstAccessMask = dstAccessMask,
+		};
+
+		const VkDependencyInfo dependencyInfo = {
+			.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+			.memoryBarrierCount = 1,
+			.pMemoryBarriers = &memoryBarrier,
+		};
+
+		vkCmdPipelineBarrier2(cmdCtx->vkCmd, &dependencyInfo);
+	}
+
+	void CommandBuffer::TextureBarrier(const TextureBarrierInfo& barrier)
+	{
+		VkPipelineStageFlags2 srcStageMask = {};
+		VkAccessFlags2 srcAccessMask = {};
+		VkPipelineStageFlags2 dstStageMask = {};
+		VkAccessFlags2 dstAccessMask = {};
+
+		const DeviceContext* gpuContext = GetGpuCtx(gpu->context);
+		const Texture* texture = gpuContext->texturePool.Get(barrier.handle);
+		const IntTexture* intTexture = gpuContext->texturePool.GetInternal(barrier.handle);
+
+		FindStageAccess(barrier.oldUsage, texture->format, srcStageMask, srcAccessMask);
+		FindStageAccess(barrier.newUsage, texture->format, dstStageMask, dstAccessMask);
+		VkImageLayout srcLayout = FindLayout(barrier.oldUsage, texture->format);
+		VkImageLayout dstLayout = FindLayout(barrier.newUsage, texture->format);
+
+		const bool bDepthStencil = HasDepthOrStencil(texture->format);
+		VkImageAspectFlags imageAspect
+			= bDepthStencil ? (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT) : VK_IMAGE_ASPECT_COLOR_BIT;
+
+		const VkImageMemoryBarrier2 imageBarrier = {
+			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+			.srcStageMask = srcStageMask,
+			.srcAccessMask = srcAccessMask,
+			.dstStageMask = dstStageMask,
+			.dstAccessMask = dstAccessMask,
+			.oldLayout = srcLayout,
+			.newLayout = dstLayout,
+			.image = intTexture->vkImage,
+			.subresourceRange = {.aspectMask = imageAspect, .levelCount = texture->numMips, .layerCount = 1},
+		};
+
+		const VkDependencyInfo dependencyInfo = {
+			.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+			.imageMemoryBarrierCount = 1,
+			.pImageMemoryBarriers = &imageBarrier,
+		};
+
+		vkCmdPipelineBarrier2(cmdCtx->vkCmd, &dependencyInfo);
+	}
 } // namespace Turbo
