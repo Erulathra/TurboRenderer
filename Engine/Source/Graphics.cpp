@@ -12,13 +12,13 @@ namespace Turbo
 
 		// TODO(SS): Handle window resize.
 		const UVec2 surfaceSize = gpu->GetSurfaceSize();
-		DepthTexture = gpu->CreateTexture(TextureBuilder::Create2D(
+		depthTexture = gpu->CreateTexture(TextureBuilder::Create2D(
 				surfaceSize,
 				EPixFormat::D32sfloat,
 				ETexFlags::SampledImage | ETexFlags::RenderTarget,
 				Name("SceneDepth")));
 
-		SDRSceneColor = gpu->CreateTexture(TextureBuilder::Create2D(
+		sdrSceneColor = gpu->CreateTexture(TextureBuilder::Create2D(
 				surfaceSize,
 				EPixFormat::RGBA8unorm,
 				ETexFlags::SampledImage | ETexFlags::StorageImage | ETexFlags::RenderTarget,
@@ -28,7 +28,23 @@ namespace Turbo
 	void Graphics::Shutdown(Engine* engine)
 	{
 		GPUDevice* gpu = engine->gpu;
-		gpu->Destroy(DepthTexture);
-		gpu->Destroy(SDRSceneColor);
+		gpu->Destroy(depthTexture);
+		gpu->Destroy(sdrSceneColor);
+	}
+
+	void Graphics::Render(Engine* engine)
+	{
+		GPUDevice* gpu = engine->gpu;
+		CommandBuffer* commandBuffer = gpu->GetCommandBuffer();
+		THandle<Texture> presentTexture = gpu->GetPresentTexture();
+
+		const Color bgColor = (gpu->GetFrameIdx() / 100) % 2 == 0 ? Color::Red() : Color::Blue();
+
+		commandBuffer->TextureBarrier(sdrSceneColor, ETexState::Undefined, ETexState::TransferDst);
+		commandBuffer->ClearColorTexture({sdrSceneColor, bgColor});
+		commandBuffer->TextureBarrier(sdrSceneColor, ETexState::TransferDst, ETexState::TransferSrc);
+		commandBuffer->TextureBarrier(presentTexture, ETexState::Undefined, ETexState::TransferDst);
+		commandBuffer->BlitWholeTexture(sdrSceneColor, presentTexture, EFilter::Nearest);
+		commandBuffer->TextureBarrier(presentTexture, ETexState::TransferDst, ETexState::Present);
 	}
 }

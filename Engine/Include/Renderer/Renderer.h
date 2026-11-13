@@ -31,12 +31,15 @@ namespace Turbo
 		void Shutdown(Engine* engine);
 
 		/* Common API */
-		CommandBuffer GetFrameCommandBuffer();
 		void WaitGPUIdle();
 
 		/* Frame to frame rendering */
 		void BeginRenderFrame();
 		void EndRenderFrame();
+
+		u64 GetFrameIdx();
+		CommandBuffer* GetCommandBuffer(); // Do not cache this cmd.
+		THandle<Texture> GetPresentTexture();
 
 		/* Swapchain */
 		void CreateSwapchain(PlatformContext* platformCtx);
@@ -61,9 +64,11 @@ namespace Turbo
 		void* context;
 
 		/* API */
-		void BufferBarrier(const BufferBarrierInfo& barrier);
-		void TextureBarrier(const TextureBarrierInfo& barrier);
+		void BufferBarrier(THandle<Buffer> handle, EBufState oldState, EBufState newState);
+		void TextureBarrier(THandle<Texture> handle, ETexState oldState, ETexState newState);
 
+		void BlitWholeTexture(THandle<Texture> srcHandle, THandle<Texture> dstHandle, EFilter filter = EFilter::Linear);
 		void BlitTexture(const BlitTextureInfo& info);
+		void ClearColorTexture(const ClearTextureInfo& info);
 	};
 } // namespace Turbo

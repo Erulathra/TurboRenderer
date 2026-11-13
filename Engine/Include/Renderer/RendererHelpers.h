@@ -114,7 +114,7 @@ namespace Turbo
 
 	enum struct ETexState : u32
 	{
-		None = 0,
+		Undefined = 0,
 
 		SRVGraphics = 1 << 0,
 		SRVCompute = 1 << 1,
@@ -189,6 +189,10 @@ namespace Turbo
 		u8 numMips = 1;
 
 		Name name = Name::None();
+
+		/* Helpers */
+		FORCEINLINE IVec3 Size() const { return IVec3(width, height, depth);}
+		FORCEINLINE IVec2 Size2() const { return IVec2(width, height);}
 	};
 
 	struct BufferBuilder
@@ -212,28 +216,27 @@ namespace Turbo
 	//                             Command buffer helpers
 	// ##################################################################################
 
-	struct BufferBarrierInfo
-	{
-		THandle<Buffer> handle = {};
-		EBufState oldUsage = EBufState::None;
-		EBufState newUsage = EBufState::None;
-	};
-
 	struct TextureBarrierInfo
 	{
 		THandle<Texture> handle = {};
-		ETexState oldUsage = ETexState::None;
-		ETexState newUsage = ETexState::None;
+		ETexState oldUsage = ETexState::Undefined;
+		ETexState newUsage = ETexState::Undefined;
 	};
 
 	struct BlitTextureInfo
 	{
-		THandle<Texture> dstHandle = {};
-		IRect2 dstRect = {};
 		THandle<Texture> srcHandle = {};
 		IRect2 srcRect = {};
+		THandle<Texture> dstHandle = {};
+		IRect2 dstRect = {};
 
 		EFilter filter = EFilter::Linear;
+	};
+
+	struct ClearTextureInfo
+	{
+		THandle<Texture> handle = {};
+		Color color = Color::Black();
 	};
 
 	// ##################################################################################

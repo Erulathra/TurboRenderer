@@ -372,4 +372,37 @@ namespace Turbo
 	using UVec4 = TVec4<u32>;
 	using Vec4  = TVec4<float>;
 	using DVec4 = TVec4<double>;
+
+	// ##################################################################################
+	//                                  LinearColor
+	// ##################################################################################
+
+	struct Color
+	{
+		Vec4 rgba;
+
+		/* Ctors */
+		constexpr Color(float r, float g, float b, float a)
+			: rgba(r, g, b, a)
+		{}
+
+		constexpr Color(Vec4 vec4)
+			: rgba(vec4)
+		{}
+
+		/* Operators */
+		constexpr operator Vec4() const { return rgba; }
+
+		/* Constants */
+		FORCEINLINE constexpr static Color Zero()    { return Color(0.f, 0.f, 0.f, 0.f);}
+		FORCEINLINE constexpr static Color Black()   { return Color(0.f, 0.f, 0.f, 1.f);}
+		FORCEINLINE constexpr static Color White()   { return Color(1.f, 1.f, 1.f, 1.f);}
+		FORCEINLINE constexpr static Color Red()     { return Color(1.f, 0.f, 0.f, 1.f);}
+		FORCEINLINE constexpr static Color Green()   { return Color(0.f, 1.f, 0.f, 1.f);}
+		FORCEINLINE constexpr static Color Blue()    { return Color(0.f, 0.f, 1.f, 1.f);}
+		FORCEINLINE constexpr static Color Yellow()  { return Color(1.f, 1.f, 0.f, 1.f);}
+		FORCEINLINE constexpr static Color Magenta() { return Color(1.f, 0.f, 1.f, 1.f);}
+		FORCEINLINE constexpr static Color Cyan()    { return Color(0.f, 1.f, 1.f, 1.f);}
+	};
+
 } // namespace Turbo

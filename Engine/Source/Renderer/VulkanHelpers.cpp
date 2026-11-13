@@ -50,7 +50,7 @@ namespace Turbo
 		VkImageLayout outLayout = VK_IMAGE_LAYOUT_GENERAL;
 		const bool bDepthStencil = HasDepthOrStencil(format);
 
-		if (state == ETexState::None)
+		if (state == ETexState::Undefined)
 		{
 			outLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		}
@@ -98,7 +98,7 @@ namespace Turbo
 		outStage = 0;
 		outAccess = 0;
 
-		if (state == ETexState::None)
+		if (state == ETexState::Undefined)
 		{
 			outAccess = VK_ACCESS_2_NONE;
 			outStage = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;

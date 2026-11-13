@@ -47,7 +47,7 @@ namespace Turbo
 
 		// NOTE(SS): For now we are rendering on the main thread.
 		gpu->BeginRenderFrame();
-
+		graphics->Render(this);
 		gpu->EndRenderFrame();
 
 		return shouldTick;

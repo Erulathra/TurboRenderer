@@ -461,6 +461,9 @@ namespace Turbo
 		vkDestroyInstance(gpuCtx->vkInstance, nullptr);
 	}
 
+	CommandBuffer* GPUDevice::GetCommandBuffer() { return &gpuCtx->commandBuffers[gpuCtx->frameInFlightIdx]; }
+	THandle<Texture> GPUDevice::GetPresentTexture() { return gpuCtx->swapchainImages[gpuCtx->swapChainImageIdx]; }
+
 	void GPUDevice::WaitGPUIdle() { vkCheck(vkDeviceWaitIdle(gpuCtx->vkDevice)); }
 
 	void GPUDevice::BeginRenderFrame()
@@ -537,6 +540,7 @@ namespace Turbo
 		++gpuCtx->frameIdx;
 		gpuCtx->frameInFlightIdx = gpuCtx->frameIdx % Renderer::maxFramesInFlight;
 	}
+	u64 GPUDevice::GetFrameIdx() { return gpuCtx->frameIdx; }
 
 	void GPUDevice::CreateSwapchain(PlatformContext* platformCtx)
 	{
@@ -778,15 +782,15 @@ namespace Turbo
 	//                                Command buffer
 	// ##################################################################################
 
-	void CommandBuffer::BufferBarrier(const BufferBarrierInfo& barrier)
+	void CommandBuffer::BufferBarrier(THandle<Buffer> handle, EBufState oldUsage, EBufState newUsage)
 	{
 		VkPipelineStageFlags2 srcStageMask = {};
 		VkAccessFlags2 srcAccessMask = {};
 		VkPipelineStageFlags2 dstStageMask = {};
 		VkAccessFlags2 dstAccessMask = {};
 
-		FindStageAccess(barrier.oldUsage, srcStageMask, srcAccessMask);
-		FindStageAccess(barrier.newUsage, dstStageMask, dstAccessMask);
+		FindStageAccess(oldUsage, srcStageMask, srcAccessMask);
+		FindStageAccess(newUsage, dstStageMask, dstAccessMask);
 
 		const VkMemoryBarrier2 memoryBarrier = {
 			.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
@@ -805,7 +809,7 @@ namespace Turbo
 		vkCmdPipelineBarrier2(cmdCtx->vkCmd, &dependencyInfo);
 	}
 
-	void CommandBuffer::TextureBarrier(const TextureBarrierInfo& barrier)
+	void CommandBuffer::TextureBarrier(THandle<Texture> handle, ETexState oldState, ETexState newState)
 	{
 		VkPipelineStageFlags2 srcStageMask = {};
 		VkAccessFlags2 srcAccessMask = {};
@@ -813,13 +817,13 @@ namespace Turbo
 		VkAccessFlags2 dstAccessMask = {};
 
 		const DeviceContext* gpuContext = GetGpuCtx(gpu->context);
-		const Texture* texture = gpuContext->texturePool.Get(barrier.handle);
-		const IntTexture* intTexture = gpuContext->texturePool.GetInternal(barrier.handle);
+		const Texture* texture = gpuContext->texturePool.Get(handle);
+		const IntTexture* intTexture = gpuContext->texturePool.GetInternal(handle);
 
-		FindStageAccess(barrier.oldUsage, texture->format, srcStageMask, srcAccessMask);
-		FindStageAccess(barrier.newUsage, texture->format, dstStageMask, dstAccessMask);
-		VkImageLayout srcLayout = FindLayout(barrier.oldUsage, texture->format);
-		VkImageLayout dstLayout = FindLayout(barrier.newUsage, texture->format);
+		FindStageAccess(oldState, texture->format, srcStageMask, srcAccessMask);
+		FindStageAccess(newState, texture->format, dstStageMask, dstAccessMask);
+		VkImageLayout srcLayout = FindLayout(oldState, texture->format);
+		VkImageLayout dstLayout = FindLayout(newState, texture->format);
 
 		const bool bDepthStencil = HasDepthOrStencil(texture->format);
 		VkImageAspectFlags imageAspect
@@ -846,6 +850,27 @@ namespace Turbo
 		vkCmdPipelineBarrier2(cmdCtx->vkCmd, &dependencyInfo);
 	}
 
+	void CommandBuffer::BlitWholeTexture(THandle<Texture> srcHandle, THandle<Texture> dstHandle, EFilter filter)
+	{
+		const DeviceContext* gpuContext = GetGpuCtx(gpu->context);
+
+		const Texture* srcTexture = gpuContext->texturePool.Get(srcHandle);
+		const Texture* dstTexture = gpuContext->texturePool.Get(dstHandle);
+		check(srcTexture && dstTexture);
+
+		// If user provide zero as src or dst rect, fill those parameters with texture sizes.
+		const IRect2 srcRect = IRect2(IVec2::Zero(), srcTexture->Size2());
+		const IRect2 dstRect = IRect2(IVec2::Zero(), dstTexture->Size2());
+
+		BlitTexture({
+			.srcHandle = srcHandle,
+			.srcRect = srcRect,
+			.dstHandle = dstHandle,
+			.dstRect = dstRect,
+			.filter = filter,
+		});
+	}
+
 	void CommandBuffer::BlitTexture(const BlitTextureInfo& info)
 	{
 		const DeviceContext* gpuContext = GetGpuCtx(gpu->context);
@@ -854,17 +879,10 @@ namespace Turbo
 		const IntTexture* srcIntTexture = gpuContext->texturePool.GetInternal(info.srcHandle);
 		const Texture* dstTexture = gpuContext->texturePool.Get(info.dstHandle);
 		const IntTexture* dstIntTexture = gpuContext->texturePool.GetInternal(info.dstHandle);
-
 		check(srcTexture && dstTexture && srcIntTexture && dstIntTexture);
 
 		// NOTE(SS): bliting depth or stencil doesn't make sense
 		check(HasDepthOrStencil(srcTexture->format) == false && HasDepthOrStencil(dstTexture->format) == false);
-
-		VkImageBlit2 region = {.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2};
-		region.srcOffsets[0] = ToVkOffset3D(IVec3(info.srcRect.min, 0));
-		region.srcOffsets[1] = ToVkOffset3D(IVec3(info.srcRect.max, 1));
-		region.dstOffsets[0] = ToVkOffset3D(IVec3(info.dstRect.min, 0));
-		region.dstOffsets[1] = ToVkOffset3D(IVec3(info.dstRect.max, 1));
 
 		const VkImageSubresourceLayers layers = {
 			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -872,6 +890,16 @@ namespace Turbo
 			.baseArrayLayer = 0,
 			.layerCount = 1,
 		};
+
+		VkImageBlit2 region = {
+			.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
+			.srcSubresource = layers,
+			.dstSubresource = layers,
+		};
+		region.srcOffsets[0] = ToVkOffset3D(IVec3(info.srcRect.min, 0));
+		region.srcOffsets[1] = ToVkOffset3D(IVec3(info.srcRect.max, 1));
+		region.dstOffsets[0] = ToVkOffset3D(IVec3(info.dstRect.min, 0));
+		region.dstOffsets[1] = ToVkOffset3D(IVec3(info.dstRect.max, 1));
 
 		const VkBlitImageInfo2 blitImageInfo = {
 			.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
@@ -885,5 +913,24 @@ namespace Turbo
 		};
 
 		vkCmdBlitImage2(cmdCtx->vkCmd, &blitImageInfo);
+	}
+
+	void CommandBuffer::ClearColorTexture(const ClearTextureInfo& info)
+	{
+		const DeviceContext* gpuContext = GetGpuCtx(gpu->context);
+		const IntTexture* intTexture = gpuContext->texturePool.GetInternal(info.handle);
+		const Texture* texture = gpuContext->texturePool.Get(info.handle);
+
+		check(texture && intTexture);
+		check(IsColor(texture->format));
+
+		const VkClearColorValue clearColor = {info.color.rgba.x, info.color.rgba.y, info.color.rgba.z, info.color.rgba.w};
+		const VkImageSubresourceRange range = {
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.levelCount = VK_REMAINING_MIP_LEVELS,
+			.layerCount = VK_REMAINING_ARRAY_LAYERS,
+		};
+
+		vkCmdClearColorImage(cmdCtx->vkCmd, intTexture->vkImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1, &range);
 	}
 } // namespace Turbo

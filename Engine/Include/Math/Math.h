@@ -13,13 +13,31 @@ namespace Turbo
 	template <typename T>
 	FORCEINLINE constexpr T Max(T a, T b)
 	{
-		return max(a, b);
+		return a > b ? a : b;
 	}
 
 	template <typename T>
 	FORCEINLINE constexpr T Min(T a, T b)
 	{
-		return min(a, b);
+		return a < b ? a : b;
+	}
+
+	template <typename T>
+	FORCEINLINE constexpr T Floor(T x)
+	{
+		return floor(x);
+	}
+
+	template <typename T>
+	FORCEINLINE constexpr T Ceil(T x)
+	{
+		return ceil(x);
+	}
+
+	template <typename T>
+	FORCEINLINE constexpr T Round(T x)
+	{
+		return round(x);
 	}
 
 	template <typename T>
