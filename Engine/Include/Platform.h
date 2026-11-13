@@ -24,7 +24,7 @@ namespace Turbo
 	struct PlatformContext { };
 
 	/* Returns pointer to allocated context */
-	PlatformContext* PlatformInit(Arena& arena);
+	PlatformContext* PlatformInit(Engine* engine);
 	void PlatformShutdown(PlatformContext* ctx);
 	void PlatformTick(PlatformContext* ctx, Engine* engine);
 

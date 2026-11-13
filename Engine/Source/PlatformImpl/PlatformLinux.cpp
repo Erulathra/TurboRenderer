@@ -82,7 +82,13 @@ namespace Turbo
 		gSignalsStackTop += 1;
 	}
 
-	PlatformContext* PlatformInit(Arena& arena)
+	void WindowCloseCallback(GLFWwindow* window)
+	{
+		Engine* engine = (Engine*)glfwGetWindowUserPointer(window);
+		engine->PushEvent(EventType::WindowClose, {});
+	}
+
+	PlatformContext* PlatformInit(Engine* engine)
 	{
 		TURBO_LOG(Log, "Initializing Linux Platform.");
 
@@ -101,12 +107,16 @@ namespace Turbo
 		signal(SIGINT, SignalsHandler);
 
 		/* Create context */
-		LinuxPlatformCtx* ctx = arena.Allocate<LinuxPlatformCtx>();
+		LinuxPlatformCtx* ctx = engine->persistentMemory.Allocate<LinuxPlatformCtx>();
 
 		/* Create window */
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		ctx->glfwWindow = glfwCreateWindow(1280, 720, "TurboEngine", nullptr, nullptr);
 		verify(ctx->glfwWindow != nullptr);
+		glfwSetWindowUserPointer(ctx->glfwWindow, engine);
+
+		/* Setup callbacks */
+		glfwSetWindowCloseCallback(ctx->glfwWindow, WindowCloseCallback);
 
 		return ctx;
 	};
@@ -125,8 +135,6 @@ namespace Turbo
 
 	void PlatformTick(PlatformContext* ctx, Engine* engine)
 	{
-		// TODO(SS): Handle window events.
-
 		/* Handle signals fired last frame */
 		while (gSignalsStackTop > 0)
 		{
@@ -143,6 +151,8 @@ namespace Turbo
 				break;
 			}
 		}
+
+		glfwPollEvents();
 	}
 
 	IVec2 GetFrameBufferSize(PlatformContext* ctx)

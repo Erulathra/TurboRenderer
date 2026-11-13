@@ -17,7 +17,7 @@ namespace Turbo
 		TURBO_LOG(Log, "Initializing clocks. [RT: %luns, M: %luns]", GetRealTimeClockPrecision(), GetRelativeClockPrecision());
 		NameDB = String::InitNameDB(persistentMemory);
 
-		platformContext = PlatformInit(persistentMemory);
+		platformContext = PlatformInit(this);
 		check(platformContext);
 
 		gpu = GPUDevice::Create(this);
@@ -64,7 +64,11 @@ namespace Turbo
 		switch (type)
 		{
 		case EventType::Sigint:
-			TURBO_LOG(Warning, "SIGINT signaled. Requesting shutdown.");
+			TURBO_LOG(Log, "SIGINT signaled. Requesting shutdown.");
+			shouldTick = false;
+			break;
+		case EventType::WindowClose:
+			TURBO_LOG(Log, "Window closed. Requesting shutdown.");
 			shouldTick = false;
 			break;
 		default:

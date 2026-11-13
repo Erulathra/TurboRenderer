@@ -9,6 +9,10 @@ namespace Turbo
 
 	enum struct EventType : u32
 	{
+		None,
+
+		WindowClose,
+
 		Sigint,
 	};
 
