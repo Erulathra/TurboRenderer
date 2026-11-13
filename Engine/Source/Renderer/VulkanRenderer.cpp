@@ -89,6 +89,9 @@ namespace Turbo
 		/* Resources */
 		TResourcePool<Texture, IntTexture, Renderer::maxTextures> texturePool;
 		TResourcePool<Buffer, IntBuffer, Renderer::maxBuffers> bufferPool;
+
+		TStaticStack<THandle<Texture>, Renderer::maxTextures> texturesToDestroy;
+		TStaticStack<THandle<Buffer>, Renderer::maxBuffers> buffersToDestroy;
 	};
 
 	struct CommandBufferContext
@@ -437,6 +440,8 @@ namespace Turbo
 	{
 		WaitGPUIdle();
 
+		FlushDestroyQueue();
+
 		/* Destroy per frame data */
 		for (u32 i = 0; i < Renderer::maxFramesInFlight; ++i)
 		{
@@ -536,10 +541,36 @@ namespace Turbo
 		};
 		vkCheck(vkQueuePresentKHR(gpuCtx->vkGraphicsQueue, &presentInfo));
 
+		FlushDestroyQueue();
+
 		/* Bump frame idx */
 		++gpuCtx->frameIdx;
 		gpuCtx->frameInFlightIdx = gpuCtx->frameIdx % Renderer::maxFramesInFlight;
 	}
+
+	void GPUDevice::FlushDestroyQueue()
+	{
+		for (THandle<Texture> handle : gpuCtx->texturesToDestroy)
+		{
+			IntTexture* texture = gpuCtx->texturePool.GetInternal(handle);
+			check(texture);
+			vkDestroyImageView(gpuCtx->vkDevice, texture->vkImageView, nullptr);
+			vmaDestroyImage(gpuCtx->vmaAllocator, texture->vkImage, texture->vmaAllocation);
+
+			gpuCtx->texturePool.Release(handle);
+		}
+
+		for (THandle<Buffer> handle : gpuCtx->buffersToDestroy)
+		{
+			IntBuffer* buffer = gpuCtx->bufferPool.GetInternal(handle);
+			check(buffer);
+			vkDestroyBuffer(gpuCtx->vkDevice, buffer->vkBuffer, nullptr);
+			vmaDestroyBuffer(gpuCtx->vmaAllocator, buffer->vkBuffer, buffer->vmaAllocation);
+
+			gpuCtx->bufferPool.Release(handle);
+		}
+	}
+
 	u64 GPUDevice::GetFrameIdx() { return gpuCtx->frameIdx; }
 
 	void GPUDevice::CreateSwapchain(PlatformContext* platformCtx)
@@ -775,8 +806,8 @@ namespace Turbo
 	Texture* GPUDevice::Access(THandle<Texture> handle) { return gpuCtx->texturePool.Get(handle); }
 	Buffer* GPUDevice::Access(THandle<Buffer> handle) { return gpuCtx->bufferPool.Get(handle); }
 
-	void GPUDevice::Destroy(THandle<Texture> handle) { unimplemented(); }
-	void GPUDevice::Destroy(THandle<Buffer> handle) { unimplemented(); }
+	void GPUDevice::Destroy(THandle<Texture> handle) { gpuCtx->texturesToDestroy.Push(handle); }
+	void GPUDevice::Destroy(THandle<Buffer> handle) { gpuCtx->buffersToDestroy.Push(handle);; }
 
 	// ##################################################################################
 	//                                Command buffer

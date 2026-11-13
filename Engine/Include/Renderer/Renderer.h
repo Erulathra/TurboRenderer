@@ -36,6 +36,7 @@ namespace Turbo
 		/* Frame to frame rendering */
 		void BeginRenderFrame();
 		void EndRenderFrame();
+		void FlushDestroyQueue();
 
 		u64 GetFrameIdx();
 		CommandBuffer* GetCommandBuffer(); // Do not cache this cmd.
