@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Math/Structures.h"
 #include "String.h"
 
 namespace Turbo
@@ -10,11 +11,11 @@ namespace Turbo
 
 	enum class ETexFlags : u8
 	{
-		None         = 0,
+		None = 0,
 		SampledImage = 1 << 1,
 		StorageImage = 1 << 2,
 		RenderTarget = 1 << 3,
-		SwapChain    = 1 << 4,
+		SwapChain = 1 << 4,
 	};
 	DEFINE_ENUM_OPERATORS(ETexFlags);
 
@@ -38,47 +39,53 @@ namespace Turbo
 		D32sfloat,
 	};
 
+	enum class EFilter : u8
+	{
+		Nearest,
+		Linear,
+	};
+
 	enum class EBufFlags : u8
 	{
 		None = 0,
 
-		UniformBuffer  = 1 << 0,
-		StorageBuffer  = 1 << 1,
-		IndexBuffer    = 1 << 2,
+		UniformBuffer = 1 << 0,
+		StorageBuffer = 1 << 1,
+		IndexBuffer = 1 << 2,
 		IndirectBuffer = 1 << 3,
 
-		CreateMapped   = 1 << 4
+		CreateMapped = 1 << 4
 	};
 	DEFINE_ENUM_OPERATORS(EBufFlags);
 
 	enum struct EBufState : u32
 	{
-		None                              = 0,
+		None = 0,
 
-		UniformGraphics                   = 1 << 0,
-		UniformCompute                    = 1 << 1,
-		UniformTraceRays                  = 1 << 2,
+		UniformGraphics = 1 << 0,
+		UniformCompute = 1 << 1,
+		UniformTraceRays = 1 << 2,
 
-		SRVGraphics                       = 1 << 3,
-		SRVCompute                        = 1 << 4,
-		SRVTraceRays                      = 1 << 5,
+		SRVGraphics = 1 << 3,
+		SRVCompute = 1 << 4,
+		SRVTraceRays = 1 << 5,
 
-		UAVGraphics                       = 1 << 6,
-		UAVCompute                        = 1 << 7,
-		UAVTraceRays                      = 1 << 8,
+		UAVGraphics = 1 << 6,
+		UAVCompute = 1 << 7,
+		UAVTraceRays = 1 << 8,
 
-		VertexOrIndex                     = 1 << 9,
+		VertexOrIndex = 1 << 9,
 
-		IndirectDraw                      = 1 << 10,
-		IndirectCompute                   = 1 << 11,
-		IndirectTraceRays                 = 1 << 12,
+		IndirectDraw = 1 << 10,
+		IndirectCompute = 1 << 11,
+		IndirectTraceRays = 1 << 12,
 
-		TransferSrc                       = 1 << 13,
-		TransferDst                       = 1 << 14,
+		TransferSrc = 1 << 13,
+		TransferDst = 1 << 14,
 
-		AccelerationStructureBuild        = 1 << 15,
+		AccelerationStructureBuild = 1 << 15,
 		AccelerationStructureBuildScratch = 1 << 16,
-		ShaderBindingTable                = 1 << 17,
+		ShaderBindingTable = 1 << 17,
 
 		/* Derived */
 		AllUniform = UniformGraphics | UniformCompute | UniformTraceRays,
@@ -92,7 +99,8 @@ namespace Turbo
 		AllTraceRays = UniformTraceRays | SRVTraceRays | UAVTraceRays | IndirectTraceRays,
 
 		AllRayTracing = AllTraceRays | AccelerationStructureBuild | AccelerationStructureBuildScratch,
-		AllRead = AllUniform | AllSRV | AllUAV | VertexOrIndex | AllIndirect | TransferSrc | AccelerationStructureBuild | ShaderBindingTable,
+		AllRead = AllUniform | AllSRV | AllUAV | VertexOrIndex | AllIndirect | TransferSrc | AccelerationStructureBuild
+			| ShaderBindingTable,
 		AllWrite = AllUAV | TransferDst | AccelerationStructureBuildScratch,
 
 		AllShaderResource = AllUniform | AllSRV | AllUAV,
@@ -108,21 +116,21 @@ namespace Turbo
 	{
 		None = 0,
 
-		SRVGraphics  = 1 << 0,
-		SRVCompute   = 1 << 1,
+		SRVGraphics = 1 << 0,
+		SRVCompute = 1 << 1,
 		SRVTraceRays = 1 << 2,
 
-		UAVGraphics  = 1 << 3,
-		UAVCompute   = 1 << 4,
+		UAVGraphics = 1 << 3,
+		UAVCompute = 1 << 4,
 		UAVTraceRays = 1 << 5,
 
-		RTVDSVRead   = 1 << 6,
-		RTVDSVWrite  = 1 << 7,
+		RTVDSVRead = 1 << 6,
+		RTVDSVWrite = 1 << 7,
 
-		TransferSrc  = 1 << 8,
-		TransferDst  = 1 << 9,
+		TransferSrc = 1 << 8,
+		TransferDst = 1 << 9,
 
-		Present      = 1 << 10,
+		Present = 1 << 10,
 
 		/* Derived */
 		AllSRV = SRVGraphics | SRVCompute | SRVTraceRays,
@@ -165,11 +173,7 @@ namespace Turbo
 		inline static TextureBuilder Create2D(UVec2 size, EPixFormat format, ETexFlags flags, Name name)
 		{
 			return {
-				.width = TruncToU16(size.x),
-				.height = TruncToU16(size.y),
-				.flags = flags,
-				.format = format,
-				.name = name
+				.width = TruncToU16(size.x), .height = TruncToU16(size.y), .flags = flags, .format = format, .name = name
 			};
 		}
 	};
@@ -222,6 +226,16 @@ namespace Turbo
 		ETexState newUsage = ETexState::None;
 	};
 
+	struct BlitTextureInfo
+	{
+		THandle<Texture> dstHandle = {};
+		IRect2 dstRect = {};
+		THandle<Texture> srcHandle = {};
+		IRect2 srcRect = {};
+
+		EFilter filter = EFilter::Linear;
+	};
+
 	// ##################################################################################
 	//                                 Helper functions
 	// ##################################################################################
@@ -256,6 +270,5 @@ namespace Turbo
 
 	constexpr bool HasStencil(EPixFormat format) { return false; }
 	constexpr bool HasDepthOrStencil(EPixFormat format) { return HasDepth(format) || HasStencil(format); }
-
 
 } // namespace Turbo

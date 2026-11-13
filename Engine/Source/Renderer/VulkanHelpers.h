@@ -15,6 +15,11 @@ namespace Turbo
 		return {.width = TruncToU32(extent.x), .height = TruncToU32(extent.y)};
 	}
 
+	FORCEINLINE VkOffset3D ToVkOffset3D(const IVec3& offset)
+	{
+		return {.x = offset.x, .y = offset.y, .z = offset.z};
+	}
+
 	/* Enum to string */
 	LiteralString EnumToString(VkDebugUtilsMessageTypeFlagsEXT messageType);
 	StringView FlagsToString(Arena& arena, VkDebugUtilsMessageTypeFlagsEXT messageType);
@@ -59,6 +64,18 @@ namespace Turbo
 		}
 
 		return VK_IMAGE_VIEW_TYPE_2D;
+	}
+
+	FORCEINLINE VkFilter ToVkFilter(EFilter filter)
+	{
+		switch (filter)
+		{
+		case EFilter::Nearest: return VK_FILTER_NEAREST;
+		case EFilter::Linear: return VK_FILTER_LINEAR;
+		invalidDefaultCase;
+		}
+
+		return VK_FILTER_NEAREST;
 	}
 
 	void FindStageAccess(EBufState state, VkPipelineStageFlagBits2& outStage, VkAccessFlagBits2& outAccess);

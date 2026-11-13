@@ -63,5 +63,7 @@ namespace Turbo
 		/* API */
 		void BufferBarrier(const BufferBarrierInfo& barrier);
 		void TextureBarrier(const TextureBarrierInfo& barrier);
+
+		void BlitTexture(const BlitTextureInfo& info);
 	};
 } // namespace Turbo

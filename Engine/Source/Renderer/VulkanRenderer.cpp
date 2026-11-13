@@ -845,4 +845,45 @@ namespace Turbo
 
 		vkCmdPipelineBarrier2(cmdCtx->vkCmd, &dependencyInfo);
 	}
+
+	void CommandBuffer::BlitTexture(const BlitTextureInfo& info)
+	{
+		const DeviceContext* gpuContext = GetGpuCtx(gpu->context);
+
+		const Texture* srcTexture = gpuContext->texturePool.Get(info.srcHandle);
+		const IntTexture* srcIntTexture = gpuContext->texturePool.GetInternal(info.srcHandle);
+		const Texture* dstTexture = gpuContext->texturePool.Get(info.dstHandle);
+		const IntTexture* dstIntTexture = gpuContext->texturePool.GetInternal(info.dstHandle);
+
+		check(srcTexture && dstTexture && srcIntTexture && dstIntTexture);
+
+		// NOTE(SS): bliting depth or stencil doesn't make sense
+		check(HasDepthOrStencil(srcTexture->format) == false && HasDepthOrStencil(dstTexture->format) == false);
+
+		VkImageBlit2 region = {.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2};
+		region.srcOffsets[0] = ToVkOffset3D(IVec3(info.srcRect.min, 0));
+		region.srcOffsets[1] = ToVkOffset3D(IVec3(info.srcRect.max, 1));
+		region.dstOffsets[0] = ToVkOffset3D(IVec3(info.dstRect.min, 0));
+		region.dstOffsets[1] = ToVkOffset3D(IVec3(info.dstRect.max, 1));
+
+		const VkImageSubresourceLayers layers = {
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.mipLevel = 0,
+			.baseArrayLayer = 0,
+			.layerCount = 1,
+		};
+
+		const VkBlitImageInfo2 blitImageInfo = {
+			.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
+			.srcImage = srcIntTexture->vkImage,
+			.srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			.dstImage = dstIntTexture->vkImage,
+			.dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			.regionCount = 1,
+			.pRegions = &region,
+			.filter = ToVkFilter(info.filter),
+		};
+
+		vkCmdBlitImage2(cmdCtx->vkCmd, &blitImageInfo);
+	}
 } // namespace Turbo
