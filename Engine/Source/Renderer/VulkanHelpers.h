@@ -15,6 +15,11 @@ namespace Turbo
 		return {.width = TruncToU32(extent.x), .height = TruncToU32(extent.y)};
 	}
 
+	FORCEINLINE VkExtent2D ToVkExtent2D(const UVec2& extent)
+	{
+		return {.width = extent.x, .height = extent.y};
+	}
+
 	FORCEINLINE VkOffset3D ToVkOffset3D(const IVec3& offset)
 	{
 		return {.x = offset.x, .y = offset.y, .z = offset.z};

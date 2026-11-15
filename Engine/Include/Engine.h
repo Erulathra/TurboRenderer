@@ -12,12 +12,18 @@ namespace Turbo
 		None,
 
 		WindowClose,
+		WindowResize,
 
 		Sigint,
 	};
 
 	struct EventData
 	{
+		union {
+			struct {
+				UVec2 newWindowSize;
+			} windowResize;
+		};
 	};
 
 	struct Engine

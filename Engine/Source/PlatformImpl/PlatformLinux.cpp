@@ -82,10 +82,24 @@ namespace Turbo
 		gSignalsStackTop += 1;
 	}
 
+	/* GLFW Callbacks */
 	void WindowCloseCallback(GLFWwindow* window)
 	{
 		Engine* engine = (Engine*)glfwGetWindowUserPointer(window);
 		engine->PushEvent(EventType::WindowClose, {});
+	}
+
+	void WindowResizeCallback(GLFWwindow* window, i32 width, i32 height)
+	{
+		Engine* engine = (Engine*)glfwGetWindowUserPointer(window);
+		engine->PushEvent(
+			EventType::WindowResize,
+			{
+				.windowResize = {
+					.newWindowSize = GetFrameBufferSize(engine->platformContext),
+				},
+			}
+		);
 	}
 
 	PlatformContext* PlatformInit(Engine* engine)
@@ -117,6 +131,7 @@ namespace Turbo
 
 		/* Setup callbacks */
 		glfwSetWindowCloseCallback(ctx->glfwWindow, WindowCloseCallback);
+		glfwSetWindowSizeCallback(ctx->glfwWindow, WindowResizeCallback);
 
 		return ctx;
 	};
@@ -155,14 +170,14 @@ namespace Turbo
 		glfwPollEvents();
 	}
 
-	IVec2 GetFrameBufferSize(PlatformContext* ctx)
+	UVec2 GetFrameBufferSize(PlatformContext* ctx)
 	{
 		LinuxPlatformCtx* linuxCtx = ToLinuxCtx(ctx);
 
-		IVec2 result = {};
-		glfwGetFramebufferSize(linuxCtx->glfwWindow, &result.x, &result.y);
+		i32 x, y;
+		glfwGetFramebufferSize(linuxCtx->glfwWindow, &x, &y);
 
-		return result;
+		return {TruncToU32(x), TruncToU32(y)};
 	}
 
 	i32 GetVulkanSurface(PlatformContext* ctx, VkInstance vkInstance, VkSurfaceKHR& outVkSurface)

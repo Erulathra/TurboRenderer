@@ -20,12 +20,14 @@ namespace Turbo
 		platformContext = PlatformInit(this);
 		check(platformContext);
 
+		const UVec2 framebufferSize = GetFrameBufferSize(platformContext);
+
 		gpu = GPUDevice::Create(this);
 		gpu->Init(this);
-		gpu->CreateSwapchain(platformContext);
+		gpu->CreateSwapchain(framebufferSize);
 
 		graphics = Graphics::Create(this);
-		graphics->Init(this);
+		graphics->Init(gpu, framebufferSize);
 
 		shouldTick = true;
 	}
@@ -46,9 +48,18 @@ namespace Turbo
 		PlatformTick(platformContext, this);
 
 		// NOTE(SS): For now we are rendering on the main thread.
-		gpu->BeginRenderFrame();
-		graphics->Render(this);
-		gpu->EndRenderFrame();
+		if (gpu->ShouldRecreateSwapchain())
+		{
+			const UVec2 framebufferSize = GetFrameBufferSize(platformContext);
+			gpu->RecreateSwapChain(framebufferSize);
+			graphics->ResizeFrameBuffer(gpu, framebufferSize);
+		}
+
+		if (gpu->BeginRenderFrame())
+		{
+			graphics->Render(this);
+			gpu->EndRenderFrame();
+		}
 
 		return shouldTick;
 	}
@@ -71,6 +82,15 @@ namespace Turbo
 			TURBO_LOG(Log, "Window closed. Requesting shutdown.");
 			shouldTick = false;
 			break;
+		case EventType::WindowResize:
+			{
+				const UVec2 newSize = eventData.windowResize.newWindowSize;
+				if (gpu->GetSurfaceSize() != newSize)
+				{
+					gpu->RequestSwapchainResize();
+				}
+				break;
+			}
 		default:
 			break;
 		}

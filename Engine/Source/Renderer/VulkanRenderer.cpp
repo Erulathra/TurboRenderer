@@ -66,6 +66,7 @@ namespace Turbo
 
 		VkSurfaceKHR vkSurface = nullptr;
 		VkSwapchainKHR vkSwapchain = nullptr;
+		bool bSwapchainRecreateRequested = false;
 
 		TStaticStack<THandle<Texture>, Renderer::maxFramesInFlight> swapchainImages;
 
@@ -471,29 +472,42 @@ namespace Turbo
 
 	void GPUDevice::WaitGPUIdle() { vkCheck(vkDeviceWaitIdle(gpuCtx->vkDevice)); }
 
-	void GPUDevice::BeginRenderFrame()
+	bool GPUDevice::BeginRenderFrame()
 	{
-		/* Wait for and reset gpu fence */
+		/* Wait for gpu fence */
 		vkCheck(vkWaitForFences(
 			gpuCtx->vkDevice,
 			1, &gpuCtx->vkFences[gpuCtx->frameInFlightIdx],
 			VK_TRUE,
 			Renderer::gpuTimeOut
 		));
-		vkCheck(vkResetFences(gpuCtx->vkDevice, 1, &gpuCtx->vkFences[gpuCtx->frameInFlightIdx]));
 
 		/* Acquire swapchain image */
-		// TODO(SS): Handle VK_ERROR_OUT_OF_DATE_KHR
-		vkCheck(vkAcquireNextImageKHR(
+		const VkResult acquireNextImageResult = vkAcquireNextImageKHR(
 			gpuCtx->vkDevice,
 			gpuCtx->vkSwapchain,
 			Renderer::gpuTimeOut,
 			gpuCtx->vkImageAcquireSemaphores[gpuCtx->frameInFlightIdx],
 			VK_NULL_HANDLE,
 			&gpuCtx->swapChainImageIdx
-		));
+		);
 
-		BeginCommandBuffer(gpuCtx->commandBuffers[gpuCtx->frameInFlightIdx]);
+		if (acquireNextImageResult == VK_ERROR_OUT_OF_DATE_KHR || acquireNextImageResult == VK_SUBOPTIMAL_KHR)
+		{
+			/* Acquire failed */
+			RequestSwapchainResize();
+			return false;
+		}
+		else
+		{
+			/* Acquire succeeded (probably) */
+			vkCheck(acquireNextImageResult);
+
+			/* Reset fence */
+			vkCheck(vkResetFences(gpuCtx->vkDevice, 1, &gpuCtx->vkFences[gpuCtx->frameInFlightIdx]));
+			BeginCommandBuffer(gpuCtx->commandBuffers[gpuCtx->frameInFlightIdx]);
+			return true;
+		}
 	}
 
 	void GPUDevice::EndRenderFrame()
@@ -539,7 +553,16 @@ namespace Turbo
 			.pSwapchains = &gpuCtx->vkSwapchain,
 			.pImageIndices = &gpuCtx->swapChainImageIdx,
 		};
-		vkCheck(vkQueuePresentKHR(gpuCtx->vkGraphicsQueue, &presentInfo));
+
+		const VkResult queuePresentResult = vkQueuePresentKHR(gpuCtx->vkGraphicsQueue, &presentInfo);
+		if (queuePresentResult == VK_ERROR_OUT_OF_DATE_KHR || queuePresentResult == VK_SUBOPTIMAL_KHR)
+		{
+			RequestSwapchainResize();
+		}
+		else
+		{
+			vkCheck(queuePresentResult);
+		}
 
 		FlushDestroyQueue();
 
@@ -559,6 +582,7 @@ namespace Turbo
 
 			gpuCtx->texturePool.Release(handle);
 		}
+		gpuCtx->texturesToDestroy.Empty();
 
 		for (THandle<Buffer> handle : gpuCtx->buffersToDestroy)
 		{
@@ -569,11 +593,12 @@ namespace Turbo
 
 			gpuCtx->bufferPool.Release(handle);
 		}
+		gpuCtx->buffersToDestroy.Empty();
 	}
 
 	u64 GPUDevice::GetFrameIdx() { return gpuCtx->frameIdx; }
 
-	void GPUDevice::CreateSwapchain(PlatformContext* platformCtx)
+	void GPUDevice::CreateSwapchain(UVec2 framebufferSize)
 	{
 		VkSurfaceCapabilitiesKHR vkSurfaceCapabilities;
 		vkCheck(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
@@ -586,7 +611,7 @@ namespace Turbo
 		VkExtent2D swapchainExtent = vkSurfaceCapabilities.currentExtent;
 		if (swapchainExtent.width == U32_MAX)
 		{
-			swapchainExtent = ToVkExtent2D(GetFrameBufferSize(platformCtx));
+			swapchainExtent = ToVkExtent2D(framebufferSize);
 		}
 
 		// TODO(SS): Replace with proper present mode and swapchain format handling
@@ -656,6 +681,19 @@ namespace Turbo
 		}
 		gpuCtx->swapchainImages.Empty();
 	}
+
+	void GPUDevice::RecreateSwapChain(UVec2 frameBufferSize)
+	{
+		WaitGPUIdle();
+
+		gpuCtx->bSwapchainRecreateRequested = false;
+
+		DestroySwapchain();
+		CreateSwapchain(frameBufferSize);
+	}
+
+	void GPUDevice::RequestSwapchainResize() { gpuCtx->bSwapchainRecreateRequested = true; }
+	bool GPUDevice::ShouldRecreateSwapchain() { return gpuCtx->bSwapchainRecreateRequested; }
 
 	UVec2 GPUDevice::GetSurfaceSize()
 	{
@@ -806,8 +844,17 @@ namespace Turbo
 	Texture* GPUDevice::Access(THandle<Texture> handle) { return gpuCtx->texturePool.Get(handle); }
 	Buffer* GPUDevice::Access(THandle<Buffer> handle) { return gpuCtx->bufferPool.Get(handle); }
 
-	void GPUDevice::Destroy(THandle<Texture> handle) { gpuCtx->texturesToDestroy.Push(handle); }
-	void GPUDevice::Destroy(THandle<Buffer> handle) { gpuCtx->buffersToDestroy.Push(handle);; }
+	void GPUDevice::Destroy(THandle<Texture> handle)
+	{
+		check(gpuCtx->texturePool.GetInternal(handle));
+		gpuCtx->texturesToDestroy.Push(handle);
+	}
+
+	void GPUDevice::Destroy(THandle<Buffer> handle)
+	{
+		check(gpuCtx->bufferPool.GetInternal(handle));
+		gpuCtx->buffersToDestroy.Push(handle);
+	}
 
 	// ##################################################################################
 	//                                Command buffer

@@ -13,9 +13,10 @@ namespace Turbo
 
 		/* Layer API */
 		static Graphics* Create(Engine* engine);
-		void Init(Engine* engine);
+		void Init(GPUDevice* gpu, UVec2 frameBufferSize);
 		void Shutdown(Engine* engine);
 
 		void Render(Engine* engine);
+		void ResizeFrameBuffer(GPUDevice* gpu, UVec2 newSize);
 	};
 }

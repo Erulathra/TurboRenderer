@@ -34,7 +34,7 @@ namespace Turbo
 		void WaitGPUIdle();
 
 		/* Frame to frame rendering */
-		void BeginRenderFrame();
+		bool BeginRenderFrame();
 		void EndRenderFrame();
 		void FlushDestroyQueue();
 
@@ -43,8 +43,12 @@ namespace Turbo
 		THandle<Texture> GetPresentTexture();
 
 		/* Swapchain */
-		void CreateSwapchain(PlatformContext* platformCtx);
+		void CreateSwapchain(UVec2 frameBufferSize);
 		void DestroySwapchain();
+		void RecreateSwapChain(UVec2 frameBufferSize);
+
+		void RequestSwapchainResize();
+		bool ShouldRecreateSwapchain();
 		UVec2 GetSurfaceSize();
 
 		/* Resource management */

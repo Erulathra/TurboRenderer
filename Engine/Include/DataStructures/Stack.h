@@ -12,8 +12,8 @@ struct TStaticStack
 {
 	using Iterator = T*;
 
-	T data[capacity];
 	u32 size;
+	T data[capacity];
 
 	TStaticStack()
 		: size(0)

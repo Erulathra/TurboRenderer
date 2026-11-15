@@ -29,7 +29,7 @@ namespace Turbo
 	void PlatformTick(PlatformContext* ctx, Engine* engine);
 
 	/* Window */
-	IVec2 GetFrameBufferSize(PlatformContext* ctx);
+	UVec2 GetFrameBufferSize(PlatformContext* ctx);
 
 	/* Vulkan */
 	const char** GetRequiredVulkanWindowExtensions(u32& extensionsCount);
