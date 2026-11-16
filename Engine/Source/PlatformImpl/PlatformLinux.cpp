@@ -111,8 +111,17 @@ namespace Turbo
 		const VkResult volkInitResult = volkInitialize();
 		verifyf(volkInitResult == VK_SUCCESS, "Volk initialization Error: %i", volkInitResult);
 
+		// TODO(SS): Replace with proper flag parsing
+		char* turboBackend = getenv("TURBO_BACKEND");
+		const bool bRunX11 = turboBackend != nullptr && strcmp(turboBackend, "X11") == 0;
+
 		/* Init GLFW */
-		TURBO_LOG(Log, "Initializing GLFW");
+		TURBO_LOG(Log, "Initializing GLFW %s", bRunX11 ? "(Forced X11)" : "");
+		if (bRunX11)
+		{
+			glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
+		}
+
 		const i32 glfwInitResult = glfwInit();
 		verifyf(glfwInitResult == GLFW_TRUE, "GLFW Init Error: %i", glfwInitResult);
 		verifyf(glfwVulkanSupported() == GLFW_TRUE, "Vulkan not supported.");
