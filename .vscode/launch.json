@@ -1,0 +1,23 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "lldb-dap",
+			"request": "launch",
+			"name": "Debug [Development]",
+			"program": "${workspaceFolder}/Build/Development/Runtime/Turbo",
+			"cwd": "${workspaceFolder}",
+			"preLaunchTask": "CMake: build",
+			"args": []
+		},
+		{
+			"type": "lldb-dap",
+			"request": "launch",
+			"name": "Debug [Release]",
+			"program": "${workspaceFolder}/Build/Release/Runtime/Turbo",
+			"cwd": "${workspaceFolder}",
+			"preLaunchTask": "CMake: build",
+			"args": []
+		}
+	]
+}
