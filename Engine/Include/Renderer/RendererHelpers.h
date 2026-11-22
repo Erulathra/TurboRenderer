@@ -53,8 +53,9 @@ namespace Turbo
 		StorageBuffer = 1 << 1,
 		IndexBuffer = 1 << 2,
 		IndirectBuffer = 1 << 3,
+		DescriptorBuffer = 1 << 4,
 
-		CreateMapped = 1 << 4
+		CreateMapped = 1 << 5
 	};
 	DEFINE_ENUM_OPERATORS(EBufFlags);
 
@@ -199,6 +200,7 @@ namespace Turbo
 	{
 		EBufFlags flags = EBufFlags::None;
 		DeviceSize size = 0;
+		u32 minAlignment = 0;
 		Name name = Name::None();
 	};
 

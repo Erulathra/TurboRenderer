@@ -52,6 +52,11 @@ namespace Turbo
 		return (T)(((iPtr)value + 15) & ~15);
 	}
 
+	FORCEINLINE u64 AlignSize(u64 value, u64 alignment)
+	{
+		return (value + alignment - 1) & ~(alignment - 1);
+	}
+
 	// ##################################################################################
 	//                                        Time
 	// ##################################################################################

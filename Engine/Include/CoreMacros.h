@@ -26,14 +26,11 @@
 	{                                                                                                                   \
 		return (ENUM_TYPE)((ENUM_TYPE##_Underlying)(lhs) ^ (ENUM_TYPE##_Underlying)(rhs));                               \
 	}                                                                                                                   \
-	constexpr ENUM_TYPE& operator|=(ENUM_TYPE& lhs, ENUM_TYPE rhs) noexcept { return lhs = (lhs | rhs); }               \
-	constexpr ENUM_TYPE& operator&=(ENUM_TYPE& lhs, ENUM_TYPE rhs) noexcept { return lhs = (lhs & rhs); }               \
-	constexpr ENUM_TYPE& operator^=(ENUM_TYPE& lhs, ENUM_TYPE rhs) noexcept { return lhs = (lhs ^ rhs); }               \
-	constexpr bool operator==(ENUM_TYPE lhs, ENUM_TYPE##_Underlying rhs) noexcept                                       \
-	{                                                                                                                   \
-		return (ENUM_TYPE##_Underlying)lhs == rhs;                                                                       \
-	}                                                                                                                   \
-	constexpr bool operator!=(ENUM_TYPE lhs, ENUM_TYPE##_Underlying rhs) noexcept { return !(lhs == rhs); }
+	constexpr ENUM_TYPE& operator|=(ENUM_TYPE& lhs, ENUM_TYPE rhs) { return lhs = (lhs | rhs); }                        \
+	constexpr ENUM_TYPE& operator&=(ENUM_TYPE& lhs, ENUM_TYPE rhs) { return lhs = (lhs & rhs); }                        \
+	constexpr ENUM_TYPE& operator^=(ENUM_TYPE& lhs, ENUM_TYPE rhs) { return lhs = (lhs ^ rhs); }                        \
+	constexpr bool operator==(ENUM_TYPE lhs, ENUM_TYPE##_Underlying rhs) { return (ENUM_TYPE##_Underlying)lhs == rhs; } \
+	constexpr bool operator!=(ENUM_TYPE lhs, ENUM_TYPE##_Underlying rhs) { return !(lhs == rhs); }
 
 // ##################################################################################
 //                                   Math constants

@@ -11,6 +11,7 @@ namespace Turbo
 	namespace Renderer
 	{
 		constexpr static u32 maxTextures = 1024;
+		constexpr static u32 maxSamplers = 128;
 		constexpr static u32 maxBuffers  = 16 * 1024;
 
 		constexpr static u32 maxFramesInFlight = 3;
@@ -36,7 +37,7 @@ namespace Turbo
 		/* Frame to frame rendering */
 		bool BeginRenderFrame();
 		void EndRenderFrame();
-		void FlushDestroyQueue();
+		void FlushDestroyQueue(u32 frameInFlightIndex);
 
 		u64 GetFrameIdx();
 		CommandBuffer* GetCommandBuffer(); // Do not cache this cmd.

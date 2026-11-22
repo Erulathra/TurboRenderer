@@ -35,6 +35,20 @@
 namespace Turbo
 {
 	// ##################################################################################
+	//                                Internal Constants
+	// ##################################################################################
+	enum BindingIdx : u32
+	{
+		BindingIdx_SampledImage,
+		BindingIdx_StorageImage,
+		BindingIdx_Sampler,
+
+		BindingIdx_Num
+	};
+
+	constexpr u64 maxPushConstantsSize = 256;
+
+	// ##################################################################################
 	//                              Internal Resource Data
 	// ##################################################################################
 
@@ -54,6 +68,12 @@ namespace Turbo
 	// ##################################################################################
 	//                             Internal Data structures
 	// ##################################################################################
+
+	struct DestroyQueue
+	{
+		TStaticStack<THandle<Texture>, Renderer::maxTextures> texturesToDestroy;
+		TStaticStack<THandle<Buffer>, Renderer::maxBuffers> buffersToDestroy;
+	};
 
 	struct DeviceContext
 	{
@@ -91,8 +111,16 @@ namespace Turbo
 		TResourcePool<Texture, IntTexture, Renderer::maxTextures> texturePool;
 		TResourcePool<Buffer, IntBuffer, Renderer::maxBuffers> bufferPool;
 
-		TStaticStack<THandle<Texture>, Renderer::maxTextures> texturesToDestroy;
-		TStaticStack<THandle<Buffer>, Renderer::maxBuffers> buffersToDestroy;
+		DestroyQueue perFrameDestroyQueues[Renderer::maxFramesInFlight];
+
+		/* Bindless */
+		VkPipelineLayout vkBindlessPipelineLayout = nullptr;
+		VkDescriptorSetLayout vkBindlessSetLayout = nullptr;
+		THandle<Buffer> descriptorBuffer = {};
+		DeviceSize bindingOffsets[BindingIdx_Num];
+		DeviceSize descriptorSizes[BindingIdx_Num];
+
+		u32 descriptorBufferAlignment = 0;
 	};
 
 	struct CommandBufferContext
@@ -146,6 +174,19 @@ namespace Turbo
 #endif // WITH_DEBUG_RENDERING_FEATURES
 	}
 
+	u8* GetDescriptorBufferAddr(DeviceContext* ctx)
+	{
+		const Buffer* buffer = ctx->bufferPool.Get(ctx->descriptorBuffer);
+		check(buffer);
+
+		return (u8*)buffer->mappedAddress;
+	}
+
+	DestroyQueue& GetCurrentFrameDestroyQueue(DeviceContext* ctx)
+	{
+		return ctx->perFrameDestroyQueues[ctx->frameInFlightIdx];
+	}
+
 	CommandBuffer CreateCommandBuffer(Arena& arena, GPUDevice* gpu)
 	{
 		CommandBuffer result = {};
@@ -170,13 +211,53 @@ namespace Turbo
 	void BeginCommandBuffer(CommandBuffer& commandBuffer)
 	{
 		CommandBufferContext* cmdContext = GetCmdCtx(commandBuffer.context);
-		vkCheck(vkResetCommandBuffer(cmdContext->vkCmd, 0));
+		DeviceContext* gpuContext = GetGpuCtx(commandBuffer.gpu->context);
 
-		const VkCommandBufferBeginInfo beginInfo = {
-			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-			.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-		};
-		vkCheck(vkBeginCommandBuffer(cmdContext->vkCmd, &beginInfo));
+		/* Reset and begin cmd */
+		{
+			vkCheck(vkResetCommandBuffer(cmdContext->vkCmd, 0));
+
+			const VkCommandBufferBeginInfo beginInfo = {
+				.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+				.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+			};
+			vkCheck(vkBeginCommandBuffer(cmdContext->vkCmd, &beginInfo));
+		}
+
+		/* Bind bindless descriptors */
+		{
+			const Buffer* descriptorBuffer = gpuContext->bufferPool.Get(gpuContext->descriptorBuffer);
+			check(descriptorBuffer);
+
+			const VkDescriptorBufferBindingInfoEXT bindingInfo = {
+				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_INFO_EXT,
+				.address = descriptorBuffer->bindlessIndex,
+				.usage = VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT | VK_BUFFER_USAGE_SAMPLER_DESCRIPTOR_BUFFER_BIT_EXT,
+			};
+			vkCmdBindDescriptorBuffersEXT(cmdContext->vkCmd, 1, &bindingInfo);
+
+			u32 index = 0;
+			VkDeviceSize offset = 0;
+			vkCmdSetDescriptorBufferOffsetsEXT(
+				cmdContext->vkCmd,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				gpuContext->vkBindlessPipelineLayout,
+				0,
+				1,
+				&index,
+				&offset
+			);
+
+			vkCmdSetDescriptorBufferOffsetsEXT(
+				cmdContext->vkCmd,
+				VK_PIPELINE_BIND_POINT_COMPUTE,
+				gpuContext->vkBindlessPipelineLayout,
+				0,
+				1,
+				&index,
+				&offset
+			);
+		}
 	}
 
 	void EndCommandBuffer(CommandBuffer& commandBuffer)
@@ -198,6 +279,7 @@ namespace Turbo
 	{
 		context = engine->persistentMemory.Allocate<DeviceContext>();
 		gpuCtx->texturePool.Init();
+		gpuCtx->bufferPool.Init();
 
 		/* Create vulkan instance */
 		{
@@ -303,8 +385,20 @@ namespace Turbo
 				gpuCtx->vkPhysicalDevice = integratedGPU;
 			}
 
-			VkPhysicalDeviceProperties2 deviceProperties = {.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
+			VkPhysicalDeviceDescriptorBufferPropertiesEXT descriptorBufferProperties = {
+				.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_PROPERTIES_EXT,
+			};
+			VkPhysicalDeviceProperties2 deviceProperties = {
+				.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+				.pNext = &descriptorBufferProperties,
+			};
 			vkGetPhysicalDeviceProperties2(gpuCtx->vkPhysicalDevice, &deviceProperties);
+
+			/* Cache properties */
+			gpuCtx->descriptorBufferAlignment  = descriptorBufferProperties.descriptorBufferOffsetAlignment;
+			gpuCtx->descriptorSizes[BindingIdx_SampledImage] = descriptorBufferProperties.sampledImageDescriptorSize;
+			gpuCtx->descriptorSizes[BindingIdx_StorageImage] = descriptorBufferProperties.storageImageDescriptorSize;
+			gpuCtx->descriptorSizes[BindingIdx_Sampler     ] = descriptorBufferProperties.samplerDescriptorSize;
 
 			TURBO_LOG(Log, "Selected device: %s", deviceProperties.properties.deviceName);
 		}
@@ -337,7 +431,7 @@ namespace Turbo
 
 		/* Create device */
 		{
-			LiteralString deviceExtensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+			LiteralString deviceExtensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME};
 
 			const float queuePriorities[] = {1.f};
 			const VkDeviceQueueCreateInfo queueCI = {
@@ -354,7 +448,10 @@ namespace Turbo
 			VkPhysicalDeviceVulkan12Features vk12Features = {
 				.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
 				.descriptorIndexing = true,
+				.shaderUniformBufferArrayNonUniformIndexing = true,
 				.shaderSampledImageArrayNonUniformIndexing = true,
+				.shaderStorageImageArrayNonUniformIndexing = true,
+				.descriptorBindingPartiallyBound = true,
 				.descriptorBindingVariableDescriptorCount = true,
 				.runtimeDescriptorArray = true,
 				.bufferDeviceAddress = true,
@@ -367,9 +464,16 @@ namespace Turbo
 				.dynamicRendering = true,
 			};
 
+			VkPhysicalDeviceDescriptorBufferFeaturesEXT vkDescriptorBufferFeatures = {
+				.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT,
+				.pNext = &vk13Features,
+				.descriptorBuffer = true,
+				.descriptorBufferCaptureReplay = WITH_DEBUG_RENDERING_FEATURES,
+			};
+
 			const VkDeviceCreateInfo deviceCI = {
 				.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-				.pNext = &vk13Features,
+				.pNext = &vkDescriptorBufferFeatures,
 				.queueCreateInfoCount = 1,
 				.pQueueCreateInfos = &queueCI,
 				.enabledExtensionCount = arrayLen(deviceExtensions),
@@ -435,13 +539,119 @@ namespace Turbo
 				gpuCtx->commandBuffers[i] = CreateCommandBuffer(engine->persistentMemory, this);
 			}
 		}
+
+		/* Bindless */
+		{
+			/* Create layout */
+			TStaticStack<VkDescriptorSetLayoutBinding, BindingIdx_Num> bindings;
+			bindings.Push({
+				.binding = BindingIdx_SampledImage,
+				.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+				.descriptorCount = Renderer::maxTextures,
+				.stageFlags = VK_SHADER_STAGE_ALL,
+			});
+			bindings.Push({
+				.binding = BindingIdx_StorageImage,
+				.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+				.descriptorCount = Renderer::maxTextures,
+				.stageFlags = VK_SHADER_STAGE_ALL,
+			});
+			bindings.Push({
+				.binding = BindingIdx_Sampler,
+				.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER,
+				.descriptorCount = Renderer::maxSamplers,
+				.stageFlags = VK_SHADER_STAGE_ALL,
+			});
+
+			VkDescriptorBindingFlags bindingFlagsArray[BindingIdx_Num];
+			for (u32 i = 0; i < BindingIdx_Num; ++i) 
+			{
+				bindingFlagsArray[i] = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT;
+			}
+
+			const VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsCI = {
+				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+				.bindingCount = BindingIdx_Num,
+				.pBindingFlags = bindingFlagsArray,
+			};
+
+			const VkDescriptorSetLayoutCreateInfo setLayoutCI = {
+				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+				.pNext = &bindingFlagsCI,
+				.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT,
+				.bindingCount = bindings.size,
+				.pBindings = bindings.data,
+			};
+
+			vkCheck(vkCreateDescriptorSetLayout(
+				gpuCtx->vkDevice,
+				&setLayoutCI,
+				nullptr,
+			 	&gpuCtx->vkBindlessSetLayout
+			));
+
+			/* Create pipeline layout */
+			const VkPushConstantRange pushConstantRange = {
+				.stageFlags = VK_SHADER_STAGE_ALL,
+				.size = maxPushConstantsSize,
+			};
+
+			const VkPipelineLayoutCreateInfo pipelineLayoutCI = {
+				.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+				.setLayoutCount = 1,
+				.pSetLayouts = &gpuCtx->vkBindlessSetLayout,
+				.pushConstantRangeCount = 1,
+				.pPushConstantRanges = &pushConstantRange
+			};
+
+			vkCheck(vkCreatePipelineLayout(
+				gpuCtx->vkDevice,
+				&pipelineLayoutCI,
+				nullptr,
+				&gpuCtx->vkBindlessPipelineLayout
+			));
+
+			/* Allocate buffer */
+			DeviceSize bufferSize = 0;
+			vkGetDescriptorSetLayoutSizeEXT(gpuCtx->vkDevice, gpuCtx->vkBindlessSetLayout, &bufferSize);
+			bufferSize = AlignSize(bufferSize, gpuCtx->descriptorBufferAlignment);
+
+			/* Create descriptor buffers */
+			gpuCtx->descriptorBuffer = CreateBuffer({
+				.flags = EBufFlags::DescriptorBuffer | EBufFlags::CreateMapped,
+				.size = bufferSize,
+				.minAlignment = gpuCtx->descriptorBufferAlignment,
+				.name = Name("DescriptorBuffer"),
+			});
+
+			/* Cache binding offsets */
+			for (u32 bindingIdx = 0; bindingIdx < BindingIdx_Num; ++bindingIdx) 
+			{
+				vkGetDescriptorSetLayoutBindingOffsetEXT(
+					gpuCtx->vkDevice,
+					gpuCtx->vkBindlessSetLayout, 
+					bindingIdx,
+					&gpuCtx->bindingOffsets[bindingIdx]
+				);
+			}
+		}
 	}
 
 	void GPUDevice::Shutdown(Engine* engine)
 	{
 		WaitGPUIdle();
 
-		FlushDestroyQueue();
+		/* Destroy bindless */
+		{
+			vkDestroyPipelineLayout(gpuCtx->vkDevice, gpuCtx->vkBindlessPipelineLayout, nullptr);
+			vkDestroyDescriptorSetLayout(gpuCtx->vkDevice, gpuCtx->vkBindlessSetLayout, nullptr);
+			Destroy(gpuCtx->descriptorBuffer);
+		}
+
+		for (u32 i = 0; i < Renderer::maxFramesInFlight; ++i)
+		{
+			FlushDestroyQueue(i);
+		}
 
 		/* Destroy per frame data */
 		for (u32 i = 0; i < Renderer::maxFramesInFlight; ++i)
@@ -481,6 +691,8 @@ namespace Turbo
 			VK_TRUE,
 			Renderer::gpuTimeOut
 		));
+
+		FlushDestroyQueue(gpuCtx->frameInFlightIdx);
 
 		/* Acquire swapchain image */
 		const VkResult acquireNextImageResult = vkAcquireNextImageKHR(
@@ -564,16 +776,16 @@ namespace Turbo
 			vkCheck(queuePresentResult);
 		}
 
-		FlushDestroyQueue();
-
 		/* Bump frame idx */
 		++gpuCtx->frameIdx;
 		gpuCtx->frameInFlightIdx = gpuCtx->frameIdx % Renderer::maxFramesInFlight;
 	}
 
-	void GPUDevice::FlushDestroyQueue()
+	void GPUDevice::FlushDestroyQueue(u32 frameInFlightIndex)
 	{
-		for (THandle<Texture> handle : gpuCtx->texturesToDestroy)
+		DestroyQueue& queue = gpuCtx->perFrameDestroyQueues[frameInFlightIndex];
+		
+		for (THandle<Texture> handle : queue.texturesToDestroy)
 		{
 			IntTexture* texture = gpuCtx->texturePool.GetInternal(handle);
 			check(texture);
@@ -582,18 +794,17 @@ namespace Turbo
 
 			gpuCtx->texturePool.Release(handle);
 		}
-		gpuCtx->texturesToDestroy.Empty();
+		queue.texturesToDestroy.Empty();
 
-		for (THandle<Buffer> handle : gpuCtx->buffersToDestroy)
+		for (THandle<Buffer> handle : queue.buffersToDestroy)
 		{
 			IntBuffer* buffer = gpuCtx->bufferPool.GetInternal(handle);
 			check(buffer);
-			vkDestroyBuffer(gpuCtx->vkDevice, buffer->vkBuffer, nullptr);
 			vmaDestroyBuffer(gpuCtx->vmaAllocator, buffer->vkBuffer, buffer->vmaAllocation);
 
 			gpuCtx->bufferPool.Release(handle);
 		}
-		gpuCtx->buffersToDestroy.Empty();
+		queue.buffersToDestroy.Empty();
 	}
 
 	u64 GPUDevice::GetFrameIdx() { return gpuCtx->frameIdx; }
@@ -661,7 +872,7 @@ namespace Turbo
 			};
 		}
 
-		TURBO_LOG(Log, "Swaphchain created. [%ux%u] (Frames: %u)", swapchainExtent.width, swapchainExtent.height, imagesCount);
+		TURBO_LOG(Log, "Swapchain created. [%ux%u] (Frames: %u)", swapchainExtent.width, swapchainExtent.height, imagesCount);
 	}
 
 	void GPUDevice::DestroySwapchain()
@@ -781,6 +992,61 @@ namespace Turbo
 		vkCheck(vkCreateImageView(gpuCtx->vkDevice, &imageViewCI, nullptr, &intTexture->vkImageView));
 		SetResourceName(gpuCtx->vkDevice, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)intTexture->vkImageView, texture->name.stringLookUp);
 
+		/* Bind to bindless */
+		{
+			u8* descriptorBufferStart = GetDescriptorBufferAddr(gpuCtx);
+
+			/* Sampled image */
+			if ((builder.flags & ETexFlags::SampledImage) != 0)
+			{
+				VkDescriptorImageInfo imageInfo = {
+					.imageView = intTexture->vkImageView,
+					.imageLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL
+				};
+
+				VkDescriptorGetInfoEXT descriptorGetInfo = {
+					.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_GET_INFO_EXT,
+					.type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+					.data = { .pSampledImage = &imageInfo }
+				};
+
+				u8* sampledImageArrayAddr = descriptorBufferStart + gpuCtx->bindingOffsets[BindingIdx_SampledImage];
+				u8* sampledImageAddr = sampledImageArrayAddr + handle.GetIndex() * gpuCtx->descriptorSizes[BindingIdx_SampledImage];
+
+				vkGetDescriptorEXT(
+					gpuCtx->vkDevice,
+					&descriptorGetInfo,
+					gpuCtx->descriptorSizes[BindingIdx_SampledImage],
+					sampledImageAddr
+				);
+			}
+
+			/* Storage image */
+			if ((builder.flags & ETexFlags::StorageImage) != 0)
+			{
+				VkDescriptorImageInfo imageInfo = {
+					.imageView = intTexture->vkImageView,
+					.imageLayout = VK_IMAGE_LAYOUT_GENERAL
+				};
+
+				VkDescriptorGetInfoEXT descriptorGetInfo = {
+					.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_GET_INFO_EXT,
+					.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+					.data = { .pStorageImage = &imageInfo }
+				};
+
+				u8* storageImageArrayAddr = descriptorBufferStart + gpuCtx->bindingOffsets[BindingIdx_StorageImage];
+				u8* storageImageAddr = storageImageArrayAddr + handle.GetIndex() * gpuCtx->descriptorSizes[BindingIdx_StorageImage];
+
+				vkGetDescriptorEXT(
+					gpuCtx->vkDevice,
+					&descriptorGetInfo,
+					gpuCtx->descriptorSizes[BindingIdx_StorageImage],
+					storageImageAddr
+				);
+			}
+		}
+
 		return handle;
 	}
 
@@ -800,10 +1066,12 @@ namespace Turbo
 
 		VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
 		                          | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
-		usage |= (builder.flags & EBufFlags::UniformBuffer)  != 0 ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT  : 0;
-		usage |= (builder.flags & EBufFlags::StorageBuffer)  != 0 ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT  : 0;
-		usage |= (builder.flags & EBufFlags::IndexBuffer)    != 0 ? VK_BUFFER_USAGE_INDEX_BUFFER_BIT    : 0;
-		usage |= (builder.flags & EBufFlags::IndirectBuffer) != 0 ? VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT : 0;
+		usage |= (builder.flags & EBufFlags::UniformBuffer)    != 0 ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT  : 0;
+		usage |= (builder.flags & EBufFlags::StorageBuffer)    != 0 ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT  : 0;
+		usage |= (builder.flags & EBufFlags::IndexBuffer)      != 0 ? VK_BUFFER_USAGE_INDEX_BUFFER_BIT    : 0;
+		usage |= (builder.flags & EBufFlags::IndirectBuffer)   != 0 ? VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT : 0;
+		constexpr VkBufferUsageFlags DescriptorBufferFlags = VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT | VK_BUFFER_USAGE_SAMPLER_DESCRIPTOR_BUFFER_BIT_EXT;
+		usage |= (builder.flags & EBufFlags::DescriptorBuffer) != 0 ? DescriptorBufferFlags : 0;
 
 		VkBufferCreateInfo bufferCI = {
 			.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -813,6 +1081,7 @@ namespace Turbo
 
 		VmaAllocationCreateInfo allocationCI = {
 			.usage = VMA_MEMORY_USAGE_AUTO,
+			.minAlignment = builder.minAlignment,
 		};
 		allocationCI.flags |=
 			(builder.flags & EBufFlags::CreateMapped) != 0
@@ -847,13 +1116,13 @@ namespace Turbo
 	void GPUDevice::Destroy(THandle<Texture> handle)
 	{
 		check(gpuCtx->texturePool.GetInternal(handle));
-		gpuCtx->texturesToDestroy.Push(handle);
+		GetCurrentFrameDestroyQueue(gpuCtx).texturesToDestroy.Push(handle);
 	}
 
 	void GPUDevice::Destroy(THandle<Buffer> handle)
 	{
 		check(gpuCtx->bufferPool.GetInternal(handle));
-		gpuCtx->buffersToDestroy.Push(handle);
+		GetCurrentFrameDestroyQueue(gpuCtx).buffersToDestroy.Push(handle);
 	}
 
 	// ##################################################################################
@@ -959,7 +1228,7 @@ namespace Turbo
 		const IntTexture* dstIntTexture = gpuContext->texturePool.GetInternal(info.dstHandle);
 		check(srcTexture && dstTexture && srcIntTexture && dstIntTexture);
 
-		// NOTE(SS): bliting depth or stencil doesn't make sense
+		// NOTE(SS): blitting depth or stencil doesn't make sense
 		check(HasDepthOrStencil(srcTexture->format) == false && HasDepthOrStencil(dstTexture->format) == false);
 
 		const VkImageSubresourceLayers layers = {
